@@ -1,7 +1,7 @@
 // In-browser engine: Qwen3.5-0.8B (4-bit ONNX) on WebGPU, with the `steer` input added by receipts.export_onnx.
 // Our edited graph is small and served with the site; the weights stream from the onnx-community repo at a pinned
 // revision. The push for a neuron is dose * scale[L] * unit(W_down[:, n]); unit columns come from atlas/down_LL.f16.
-const ORT_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/dist/ort.webgpu.min.mjs';
+const ORT_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort.webgpu.min.mjs';
 const TJS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6';
 
 export class WebEngine {
@@ -15,16 +15,19 @@ export class WebEngine {
     const hub = (f) => `https://huggingface.co/${repo}/resolve/${revision}/${f}`;
     onProgress('Loading the runtime');
     this.ort = await import(ORT_URL);
-    this.ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/dist/';
+    this.ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/';
     const { AutoTokenizer } = await import(TJS_URL);
     this.tok = await AutoTokenizer.from_pretrained(repo, { revision });
     const providers = navigator.gpu ? ['webgpu', 'wasm'] : ['wasm'];
     this.device = navigator.gpu ? 'WebGPU' : 'CPU (WebAssembly)';
     onProgress(`Downloading the model, about 650 MB on first visit (${this.device})`);
-    this.embed = await this.ort.InferenceSession.create(hub('onnx/embed_tokens_q4.onnx'), {
-      executionProviders: providers,
-      externalData: [{ path: 'embed_tokens_q4.onnx_data', data: hub('onnx/embed_tokens_q4.onnx_data') }],
-    });
+    // 4-bit embedding table, looked up here instead of through ONNX (its GatherBlockQuantized op is missing on the
+    // WebAssembly backend). Per row: 512 bytes of packed 4-bit values, 32 float32 scales, 16 bytes of 4-bit zero points.
+    const buf = await (await fetch(hub('onnx/embed_tokens_q4.onnx_data'))).arrayBuffer();
+    const V = 248320;
+    this.embQ = new Uint8Array(buf, 0, V * 512);
+    this.embS = new Float32Array(buf, V * 512, V * 32);
+    this.embZ = new Uint8Array(buf, V * 512 + V * 32 * 4, V * 16);
     this.dec = await this.ort.InferenceSession.create(this.cfg.graph, {
       executionProviders: providers,
       externalData: [{ path: this.cfg.dataName, data: hub('onnx/decoder_model_merged_q4.onnx_data') }],
@@ -51,12 +54,25 @@ export class WebEngine {
     return st;
   }
 
+  embedRows(ids) {
+    const H = this.cfg.hidden, out = new Float32Array(ids.length * H);
+    ids.forEach((t, r) => {
+      const q = t * 512, sc = t * 32, zp = t * 16;
+      for (let j = 0; j < H; j++) {
+        const byte = this.embQ[q + (j >> 1)], v = (j & 1) ? byte >> 4 : byte & 15;
+        const blk = j >> 5, zb = this.embZ[zp + (blk >> 1)], z = (blk & 1) ? zb >> 4 : zb & 15;
+        out[r * H + j] = (v - z) * this.embS[sc + blk];
+      }
+    });
+    return out;
+  }
+
   async _step(ids, start, state, steer) {
     const T = this.ort.Tensor;
-    const e = await this.embed.run({ [this.embed.inputNames[0]]: new T('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length]) });
+    const embeds = new T('float32', this.embedRows(ids), [1, ids.length, this.cfg.hidden]);
     const n = ids.length, pos = new BigInt64Array(3 * n);
     for (let k = 0; k < 3; k++) for (let i = 0; i < n; i++) pos[k * n + i] = BigInt(start + i);
-    const feed = { inputs_embeds: e[this.embed.outputNames[0]], attention_mask: new T('int64', new BigInt64Array(start + n).fill(1n), [1, start + n]),
+    const feed = { inputs_embeds: embeds, attention_mask: new T('int64', new BigInt64Array(start + n).fill(1n), [1, start + n]),
       position_ids: new T('int64', pos, [3, 1, n]), steer: new T('float32', steer, [this.cfg.layers, this.cfg.hidden]), ...state };
     const out = await this.dec.run(feed);
     const next = {};
