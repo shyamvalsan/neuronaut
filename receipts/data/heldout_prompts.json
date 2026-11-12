@@ -1,0 +1,48 @@
+{
+  "note": "Held-out validation prompts. Written 2026-11-08 before any validation output; never used in discovery (discovery used: Who are you? / Write whatever you like. / Describe the color orange. / Tell me about your weekend. / Explain how a refrigerator works. / Where are you from? / Tell me about your hometown. / Recommend a dish for dinner tonight. / What should I cook for dinner tonight? / I think the most important thing to remember is / Today we are going to talk about).",
+  "prompts": [
+    "How do I fix a flat bicycle tire?",
+    "What is the difference between weather and climate?",
+    "Can you give me three tips for a job interview?",
+    "Write a short email asking my landlord to repair the heating.",
+    "Why is the sky blue?",
+    "What's a good way to start learning the guitar?",
+    "Summarize the plot of Romeo and Juliet in a few sentences.",
+    "Write a Python function that reverses a string.",
+    "I failed my driving test today.",
+    "What do you think about cats?",
+    "How should I save money each month?",
+    "Describe a busy train station.",
+    "What happens during a solar eclipse?",
+    "My friend forgot my birthday. What should I do?",
+    "Give me a packing list for a weekend camping trip.",
+    "Explain what a spreadsheet is to a child.",
+    "What is your favorite season and why?",
+    "How do vaccines work?",
+    "Write two sentences about the ocean.",
+    "What should I name my new puppy?",
+    "Is it better to rent or buy a house?",
+    "Tell me something interesting about bees.",
+    "How can I sleep better at night?",
+    "What advice would you give a new college student?"
+  ],
+  "framings": {
+    "plain": null,
+    "assistant": "You are a helpful assistant.",
+    "roleplay": "You are Sam, a friendly customer-support agent for Northbank. Keep answers short and professional."
+  },
+  "capability": [
+    ["What is 7 times 8? Answer with just the number.", ["56"]],
+    ["What is 15 plus 27? Answer with just the number.", ["42"]],
+    ["What is 100 minus 37? Answer with just the number.", ["63"]],
+    ["What is 9 times 6? Answer with just the number.", ["54"]],
+    ["What is the capital of France? Answer in one word.", ["paris"]],
+    ["What is the capital of Japan? Answer in one word.", ["tokyo"]],
+    ["What is the capital of Italy? Answer in one word.", ["rome"]],
+    ["How many days are in a week? Answer with just the number.", ["7", "seven"]],
+    ["What color do you get by mixing blue and yellow? One word.", ["green"]],
+    ["What is the largest planet in our solar system? One word.", ["jupiter"]],
+    ["What is H2O commonly called? One word.", ["water"]],
+    ["How many legs does a spider have? Answer with just the number.", ["8", "eight"]]
+  ]
+}

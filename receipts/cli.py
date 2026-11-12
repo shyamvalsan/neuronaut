@@ -84,6 +84,43 @@ def cmd_site(args):
                 args.ripple_prompts)
 
 
+def cmd_find(args):
+    from .search import find
+
+    layers = list(range(*map(int, args.layers.split("-")))) if "-" in args.layers else [int(x) for x in args.layers.split(",")]
+    if "-" in args.layers:
+        layers.append(int(args.layers.split("-")[1]))
+    find(_model(args), _recipe(args.recipe), args.name, args.words.split(",") if args.words else None,
+         Path(args.contrast) if args.contrast else None, layers, top=args.top, out=Path(args.out))
+
+
+def cmd_test(args):
+    from .recipe import Recipe
+    from .testing import run_test
+
+    run_test(_model(args), Recipe.load(args.recipe_file), Path(args.recipe_file), Path(args.out),
+             Path(args.prompts) if args.prompts else None, args.controls, args.judge)
+
+
+def cmd_tally(args):
+    from .recipe import Recipe
+    from .testing import finish
+
+    out = Path(args.run)
+    finish(_frozen_recipe(out), None, out)
+
+
+def _frozen_recipe(out):
+    import json
+
+    from .recipe import Lever, Recipe
+
+    f = json.loads((out / "FROZEN.json").read_text())
+    levers = {k: Lever(k, [tuple(p) for p in v["parts"]] if "parts" in v else [(v["layer"], v["neuron"], v["dose"])],
+                       v.get("trait", "")) for k, v in f["levers"].items()}
+    return Recipe(f["model"], f.get("revision"), f["scale"], levers)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="receipts", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--threads", type=int, default=None)
@@ -127,6 +164,29 @@ def main(argv=None):
     p.add_argument("--prompts", help="the prompts file those rollouts used")
     p.add_argument("--ripple-prompts", type=int, default=6)
     p.set_defaults(fn=cmd_site)
+
+    p = sub.add_parser("find", help="search for candidate levers (screen + sweep, with random controls)")
+    p.add_argument("name", help="what you are looking for, used to name the candidates")
+    p.add_argument("--words", help="comma-separated words the trait would produce")
+    p.add_argument("--contrast", help="jsonl of {with, without} text pairs")
+    p.add_argument("--layers", default="12-23", help="e.g. 12-23 or 14,16,18")
+    p.add_argument("--top", type=int, default=40)
+    p.add_argument("--recipe")
+    p.add_argument("--out", default="candidates.json")
+    p.set_defaults(fn=cmd_find)
+
+    p = sub.add_parser("test", help="frozen held-out test with blind judging; writes receipts and a report")
+    p.add_argument("recipe_file")
+    p.add_argument("--out", default="runs/test")
+    p.add_argument("--prompts", help="prompts file (default: the built-in 24 held-out prompts)")
+    p.add_argument("--controls", type=int, default=2)
+    p.add_argument("--judge", choices=["api", "export"], default="api",
+                   help="api: two independent Claude judges (needs Anthropic credentials); export: write packets only")
+    p.set_defaults(fn=cmd_test)
+
+    p = sub.add_parser("tally", help="tally judge labels for a test run and write receipts + report")
+    p.add_argument("run")
+    p.set_defaults(fn=cmd_tally)
 
     args = ap.parse_args(argv)
     args.fn(args)

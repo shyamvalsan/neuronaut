@@ -19,6 +19,12 @@ class _Tok:
     def decode(self, ids, skip_special_tokens=True):
         return " ".join(map(str, ids))
 
+    def apply_chat_template(self, msgs, add_generation_prompt=True, tokenize=False, **kw):
+        return " ".join(m["content"] for m in msgs)
+
+    def __call__(self, text, add_special_tokens=False):
+        return {"input_ids": [1 + (ord(c) % 60) for c in text[:12]]}
+
 
 @pytest.fixture(scope="module")
 def tiny():
