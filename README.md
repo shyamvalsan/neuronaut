@@ -55,8 +55,9 @@ Runs on a laptop CPU: float32 PyTorch, no GPU, no gradients. Apple's GPU or CUDA
 In the browser with no install, the explorer can run the model itself: Qwen3.5-0.8B in 4 bits on WebGPU (about 650 MB on
 first visit). It uses the official onnx-community export with one change, a `steer` input added after every MLP
 (`receipts/export_onnx.py`); with a zero push it matches the original graph exactly, and in spot checks the levers show the same behaviour as
-full precision. The 4-bit model is slightly different from the one the receipts come from, so its own receipts are
-measured separately (see `docs/`).
+full precision. The 4-bit model is slightly different from the one the receipts come from, so its own receipts were
+measured separately: deity, reassure, Jesus and anxious hold up on it too (6 or 7 of 8 replies vs 0 of 8 for random
+pushes); see [docs/4bit-receipts.md](docs/4bit-receipts.md).
 
 ## Built-in levers (Qwen3.5-0.8B)
 

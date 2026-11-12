@@ -39,6 +39,13 @@ async function boot() {
   $('status').classList.toggle('live', state.live);
   $('status-text').textContent = state.live ? 'model live on this machine' : state.web ? 'recorded outputs · model can run in your browser' : (state.recorded ? 'recorded outputs' : 'atlas only');
   buildLevers();
+  if (!state.live && state.recorded?.prompts?.length) {
+    const f = document.createElement('div'); f.className = 'field';
+    f.innerHTML = '<label for="recorded">Recorded prompts from the test</label><select id="recorded"><option value="">Choose one</option>' +
+      state.recorded.prompts.map((q, i) => `<option value="${i}">${esc(q)}</option>`).join('') + '</select>';
+    $('prompt').closest('.field').before(f);
+    $('recorded').onchange = (e) => { if (e.target.value !== '') { $('prompt').value = state.recorded.prompts[+e.target.value]; $('dose').value = 1; updateDose(); showRecorded(); setHash(); } };
+  }
   bindUI();
   if (!applyHash()) selectLever('deity');
 }
@@ -73,7 +80,9 @@ function selectLever(name, { open = true } = {}) {
   $('lv-trait').textContent = l.trait || '';
   const r = l.receipts;
   $('lv-receipt').innerHTML = r ? `Blind test on new prompts: trait seen in <b>${r.tagged} of ${r.n}</b> replies, ${r.control} of ${r.n} for a random push of the same size` +
-    (r.held_up ? '.' : '. Did not beat chance clearly enough to count.') : 'Untested: no receipts yet.';
+    (r.held_up ? '.' : '. Did not beat chance clearly enough to count.') +
+    (r.browser ? ` On the 4-bit model this page runs: ${r.browser.tagged} of ${r.browser.n} vs ${r.browser.control} of ${r.browser.n}` +
+      (r.browser.held_up ? '.' : ', too few prompts to be sure.') : '') : 'Untested: no receipts yet.';
   $('dose').value = 1; updateDose();
   const [L, n] = leverParts(l)[0];
   if (open) openNeuron(L, n, { keepTab: true });

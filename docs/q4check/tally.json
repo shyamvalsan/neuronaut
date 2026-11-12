@@ -1,0 +1,98 @@
+{
+ "angry": {
+  "tagged": 2,
+  "n": 8,
+  "control": 0,
+  "base": 0,
+  "p": 0.23333333333333334,
+  "coherence": [
+   2.31,
+   3.44,
+   4.0
+  ]
+ },
+ "anxious": {
+  "tagged": 6,
+  "n": 8,
+  "control": 0,
+  "base": 0,
+  "p": 0.0034965034965034965,
+  "coherence": [
+   1.0,
+   1.5,
+   4.0
+  ]
+ },
+ "cosmic": {
+  "tagged": 4,
+  "n": 8,
+  "control": 0,
+  "base": 0,
+  "p": 0.038461538461538464,
+  "coherence": [
+   3.0,
+   2.81,
+   4.0
+  ]
+ },
+ "deity": {
+  "tagged": 7,
+  "n": 8,
+  "control": 0,
+  "base": 0,
+  "p": 0.0006993006993006993,
+  "coherence": [
+   1.44,
+   3.44,
+   4.0
+  ]
+ },
+ "enthusiast": {
+  "tagged": 5,
+  "n": 8,
+  "control": 0,
+  "base": 1,
+  "p": 0.01282051282051282,
+  "coherence": [
+   2.0,
+   1.62,
+   4.0
+  ]
+ },
+ "gratitude": {
+  "tagged": 3,
+  "n": 8,
+  "control": 0,
+  "base": 0,
+  "p": 0.1,
+  "coherence": [
+   2.69,
+   3.19,
+   4.0
+  ]
+ },
+ "jesus": {
+  "tagged": 6,
+  "n": 8,
+  "control": 0,
+  "base": 0,
+  "p": 0.0034965034965034965,
+  "coherence": [
+   1.25,
+   1.56,
+   4.0
+  ]
+ },
+ "reassure": {
+  "tagged": 7,
+  "n": 8,
+  "control": 0,
+  "base": 0,
+  "p": 0.0006993006993006993,
+  "coherence": [
+   1.81,
+   2.88,
+   4.0
+  ]
+ }
+}
