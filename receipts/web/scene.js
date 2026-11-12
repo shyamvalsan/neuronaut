@@ -7,6 +7,7 @@ const AMBER = new THREE.Color('#f0a63a');
 const STEEL = new THREE.Color('#8fb3d9');
 const WHITE = new THREE.Color('#e8ecf4');
 const BASE = new THREE.Color('#5d6578');
+const DOT = new THREE.Color('#9aa4bb');
 
 export class Tower {
   constructor(canvas, meta, layout, stats) {
@@ -16,7 +17,7 @@ export class Tower {
     this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
-    this.camera.position.set(13.5, this.height * 0.62, 13.5);
+    this.camera.position.set(16, this.height * 1.25, 16);
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.target.set(0, this.height * 0.45, 0);
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.08;
@@ -30,6 +31,7 @@ export class Tower {
     this.wires = new THREE.Group(); this.scene.add(this.wires);
     this.labels = new THREE.Group(); this.scene.add(this.labels);
     this.words = new THREE.Group(); this.scene.add(this.words);
+    this.says = new THREE.Group(); this.scene.add(this.says);
     this._layerLabels();
     this.selected = null;
     this.timeline = null;
@@ -50,13 +52,13 @@ export class Tower {
     const n = this.L * this.N;
     this.xy = layout;
     const position = new Float32Array(n * 3), base = new Float32Array(n), size = new Float32Array(n);
-    let maxMean = 0;
-    for (let i = 0; i < n; i++) maxMean = Math.max(maxMean, stats[4 * i + 3]);
+    const layerMax = new Float32Array(this.L);
+    for (let i = 0; i < n; i++) { const L = Math.floor(i / this.N); layerMax[L] = Math.max(layerMax[L], stats[4 * i + 3]); }
     for (let L = 0; L < this.L; L++) for (let k = 0; k < this.N; k++) {
       const i = L * this.N + k;
       position[3 * i] = layout[2 * i] * this.R; position[3 * i + 1] = L * this.gap; position[3 * i + 2] = layout[2 * i + 1] * this.R;
-      const busy = Math.sqrt(stats[4 * i + 3] / maxMean);          // how active the neuron usually is
-      base[i] = 0.18 + 0.5 * busy; size[i] = 1.4 + 1.6 * busy;
+      const busy = Math.sqrt(stats[4 * i + 3] / layerMax[L]);      // how active the neuron usually is, within its layer
+      base[i] = 0.35 + 0.65 * busy; size[i] = 2.2 + 2.4 * busy;
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(position, 3));
@@ -67,18 +69,18 @@ export class Tower {
     this.pointsGeo = g;
     this.points = new THREE.Points(g, new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      uniforms: { uBase: { value: BASE }, uAmber: { value: AMBER }, uWhite: { value: WHITE }, uScale: { value: 1 } },
+      uniforms: { uBase: { value: DOT }, uAmber: { value: AMBER }, uWhite: { value: WHITE }, uScale: { value: 1 } },
       vertexShader: `attribute float base; attribute float size; attribute float glow; attribute float tint;
         varying float vA; varying float vG; varying float vT; uniform float uScale;
         void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv;
           vG = glow; vT = tint; vA = base;
-          gl_PointSize = (size + glow * 7.0) * uScale * (18.0 / -mv.z); }`,
+          gl_PointSize = (size + glow * 9.0) * uScale * (30.0 / -mv.z); }`,
       fragmentShader: `uniform vec3 uBase; uniform vec3 uAmber; uniform vec3 uWhite; varying float vA; varying float vG; varying float vT;
         void main() { vec2 c = gl_PointCoord - 0.5; float d = length(c); if (d > 0.5) discard;
           float soft = smoothstep(0.5, 0.0, d);
           vec3 hi = mix(uAmber, uWhite, vT);
           vec3 col = mix(uBase, hi, clamp(vG, 0.0, 1.0));
-          float a = soft * (vA * 0.55 + vG * 0.9);
+          float a = soft * (vA * 0.85 + vG * 0.95);
           gl_FragColor = vec4(col * a, a); }`,
     }));
     this.scene.add(this.points);
@@ -114,7 +116,7 @@ export class Tower {
       if (L % 3 && L !== this.L - 1) continue;
       const k = (kinds[L] || '').startsWith('full') ? 'attention' : (kinds[L] || '').includes('linear') ? 'DeltaNet' : '';
       const s = this._sprite(`L${L}${k ? '  ' + k : ''}`, { size: 16 });
-      s.position.set(-this.R * 1.32, L * this.gap, 0);
+      s.userData.layer = L;
       s.center.set(1, 0.5);
       this.labels.add(s);
     }
@@ -168,6 +170,10 @@ export class Tower {
     this.focus(p);
   }
 
+  clearSays() {
+    for (const c of [...this.says.children]) { c.material.map.dispose(); c.material.dispose(); this.says.remove(c); }
+  }
+
   clearWires() {
     for (const c of [...this.wires.children]) { c.geometry.dispose(); c.material.dispose(); this.wires.remove(c); }
   }
@@ -183,7 +189,7 @@ export class Tower {
   }
 
   focus(p) {
-    this._tween = { from: this.controls.target.clone(), to: new THREE.Vector3(0, p.y, 0), t: 0 };
+    this._tween = { from: this.controls.target.clone(), to: new THREE.Vector3(0, (p.y + this.height * 0.5) / 2, 0), t: 0 };
   }
 
   // ---------- ripple ----------
@@ -197,10 +203,10 @@ export class Tower {
 
   _stepRipple(now) {
     const tl = this.timeline; if (!tl) return;
-    const per = 4200, el = now - tl.t0, phaseIdx = Math.floor(el / per);
+    const per = 5200, el = now - tl.t0, phaseIdx = Math.floor(el / per);
     if (phaseIdx >= tl.phases.length) { this.timeline = null; tl.onPhase(null); return; }
     const key = tl.phases[phaseIdx], d = tl.data[key], local = (el % per) / per;
-    if (phaseIdx !== tl.last) { tl.last = phaseIdx; tl.onPhase(key); this.glow.fill(0); this.ringGlow.fill(0); }
+    if (phaseIdx !== tl.last) { tl.last = phaseIdx; tl.onPhase(key); this.glow.fill(0); this.ringGlow.fill(0); this.clearSays(); tl.shown = new Set(); }
     const front = tl.start + local * 1.25 * (this.L - tl.start);      // the wave climbs from the pushed layer
     const tintV = key === 'lever' ? 0 : 1;
     for (let L = tl.start; L < this.L; L++) {
@@ -208,6 +214,11 @@ export class Tower {
       const strength = d.moved[L] / tl.maxMoved;
       this.ringGlow[L] = reached ? Math.max(this.ringGlow[L] * 0.985, strength) : 0;
       this.ringTint[L] = tintV;
+      if (reached && d.says && d.says[L] && d.says[L].length && !tl.shown.has(L) && (L - tl.start) % 1 === 0) {
+        tl.shown.add(L);
+        const sp = this._sprite(d.says[L].slice(0, 3).join('  '), { color: key === 'lever' ? '#f0a63a' : '#a3a9b8', size: 17, font: 'IBM Plex Sans', weight: 500 });
+        sp.userData.layer = L; sp.center.set(0, 0.5); this.says.add(sp);
+      }
       if (reached) {
         const top = d.top[L], m = Math.max(1e-6, ...top.map(x => Math.abs(x[1])));
         for (const [n, dh] of top) {
@@ -236,6 +247,9 @@ export class Tower {
       m.opacity = 0.16 + 0.7 * g;
     }
     this.controls.update();
+    const right = new THREE.Vector3().subVectors(this.controls.target, this.camera.position).cross(this.camera.up).setY(0).normalize();
+    for (const s of this.labels.children) s.position.copy(right).multiplyScalar(-this.R * 1.22).setY(s.userData.layer * this.gap);
+    for (const s of this.says.children) s.position.copy(right).multiplyScalar(this.R * 1.18).setY(s.userData.layer * this.gap);
     this.renderer.render(this.scene, this.camera);
   }
 }

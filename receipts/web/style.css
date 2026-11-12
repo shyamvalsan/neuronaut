@@ -12,6 +12,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--text); font: 400 14px/1.5 var(--sans); display: grid; grid-template-rows: 56px 1fr; overflow: hidden; }
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
@@ -53,6 +54,8 @@ button.primary { background: var(--accent); color: var(--on-accent); border-colo
   background: rgba(17, 20, 28, 0.9); border: 1px solid var(--line); }
 .ripple-card figcaption { font-size: 13px; margin-bottom: 8px; display: grid; }
 .ripple-card figcaption .muted { font-size: 11px; }
+.says { margin: 0 0 8px; font-size: 13px; color: var(--text-2); }
+.says .lev { color: var(--accent); font-weight: 500; }
 .ripple-card svg { width: 100%; height: auto; display: block; }
 .ripple-card text { font: 10px var(--mono); fill: var(--muted); }
 .legend { display: flex; gap: 16px; font-size: 11px; color: var(--text-2); margin-top: 6px; }

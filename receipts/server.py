@@ -53,37 +53,69 @@ def api_generate(body):
 
 
 @torch.no_grad()
-def _neuron_acts(m, ids, push):
-    """Activations of every MLP neuron at the last token, and the residual leaving each layer: ([L, N], [L, d])."""
+def _neuron_acts(m, ids, pushes: list[dict]):
+    """One batched forward pass, one row per push dict. Returns MLP activations [B, L, N] and residual leaving each
+    layer [B, L, d], both at the last token."""
+    B, D = len(pushes), m.d_model
+    per_layer = {}
+    for i, p in enumerate(pushes):
+        for L, v in p.items():
+            per_layer.setdefault(L, torch.zeros(B, 1, D))[i, 0] += v
     h, r = [], []
-    hooks = [l.mlp.down_proj.register_forward_pre_hook(lambda mod, a: h.append(a[0][0, -1].float())) for l in m.layers]
-    hooks += [l.register_forward_hook(lambda mod, a, o: r.append((o[0] if isinstance(o, tuple) else o)[0, -1].float()))
+    hooks = [l.mlp.down_proj.register_forward_pre_hook(lambda mod, a: h.append(a[0][:, -1].float())) for l in m.layers]
+    hooks += [l.register_forward_hook(lambda mod, a, o: r.append((o[0] if isinstance(o, tuple) else o)[:, -1].float()))
               for l in m.layers]
     try:
-        with m.pushing(push):
-            m.hf(input_ids=torch.tensor([ids]), use_cache=False)
+        with m.pushing(per_layer):
+            m.hf(input_ids=torch.tensor([ids] * B), use_cache=False)
     finally:
         for x in hooks:
             x.remove()
-    return torch.stack(h), torch.stack(r)
+    return torch.stack(h, 1), torch.stack(r, 1)
+
+
+def _readout(m):
+    """Unembedding and final-norm gain, to read a change in the residual stream as words (logit lens)."""
+    if getattr(m, "_readout", None) is None:
+        norm = None
+        for name, mod in m.hf.named_modules():
+            if name.endswith("language_model.norm") or name == "model.norm":
+                norm = mod
+        g = norm.weight.detach().float() if norm is not None else torch.ones(m.d_model)
+        if any(k in m.name.lower() for k in ("qwen", "gemma")):
+            g = 1 + g
+        m._readout = (m.hf.get_output_embeddings().weight.detach().float(), g)
+    return m._readout
 
 
 def api_ripple(body):
+    """How a push spreads: per layer, the size of the change in the model's state (as a fraction of the layer's typical
+    size), how much the later neurons' activity changes, the words the change points to (logit lens of the change),
+    and the neurons that changed most. For the lever and for a random push of the same size."""
     from .recipe import control_vectors, lever_vectors
 
     m, lv, scale = State.model, _lever(body), State.recipe.scale
+    head, g = _readout(m)
     ids = m.chat_ids(body["prompt"], system=body.get("system") or None)
-    h0, r0 = _neuron_acts(m, ids, {})
+    H, R = _neuron_acts(m, ids, [{}, lever_vectors(m, lv, scale), control_vectors(m, lv, scale)])
+    h0, r0 = H[0], R[0]
+    start = min(p[0] for p in lv.parts)
     out = {"label": lv.label, "parts": lv.parts}
-    for key, vec in (("lever", lever_vectors(m, lv, scale)), ("control", control_vectors(m, lv, scale))):
-        h1, r1 = _neuron_acts(m, ids, vec)
-        moved = ((r1 - r0).norm(dim=-1) / torch.tensor(scale)).tolist()
+    for row, key in ((1, "lever"), (2, "control")):
+        h1, r1 = H[row], R[row]
+        dr = r1 - r0
+        moved = (dr.norm(dim=-1) / torch.tensor(scale)).tolist()
         dh = h1 - h0
-        top = []
+        activity = (dh.abs().sum(-1) / (h0.abs().sum(-1) + 1e-6)).tolist()
+        says, top = [], []
         for L in range(m.n_layers):
+            if L < start:
+                says.append([]); top.append([]); continue
+            toks = (head @ (g * dr[L])).topk(4).indices.tolist()
+            says.append([m.tok.decode([t]).strip() for t in toks])
             v, i = dh[L].abs().topk(24)
             top.append([[int(n), round(float(dh[L, n]), 3)] for n in i.tolist()])
-        out[key] = {"moved": [round(x, 4) for x in moved], "top": top}
+        out[key] = {"moved": [round(x, 4) for x in moved], "activity": [round(x, 3) for x in activity], "says": says, "top": top}
     return out
 
 

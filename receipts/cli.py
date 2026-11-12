@@ -66,7 +66,13 @@ def cmd_list(args):
 def cmd_atlas(args):
     from .atlas import build_atlas
 
-    build_atlas(_model(args), out=Path(args.out), tokens=args.tokens)
+    from .model import default_model
+
+    m = _model(args)
+    name, rev = default_model()
+    if Path(m.name).is_dir():  # a local copy: label the atlas with the model id it is a copy of
+        m.name, m.revision = "Qwen/Qwen3.5-0.8B", rev
+    build_atlas(m, out=Path(args.out), tokens=args.tokens)
 
 
 def cmd_serve(args):

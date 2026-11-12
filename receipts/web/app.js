@@ -65,7 +65,7 @@ function buildLevers() {
 function leverParts(l) { return l.parts || [[l.layer, l.neuron, l.dose]]; }
 function addr(parts) { return parts.map(([L, n, d]) => `L${L}·N${n} ${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(2).replace(/0$/, '')}`).join(' + '); }
 
-function selectLever(name) {
+function selectLever(name, { open = true } = {}) {
   const l = state.recipe.levers[name]; if (!l) return;
   state.lever = { name, ...l };
   document.querySelectorAll('.lv').forEach(b => b.setAttribute('aria-pressed', b.dataset.name === name));
@@ -76,7 +76,7 @@ function selectLever(name) {
     (r.held_up ? '.' : '. Did not beat chance clearly enough to count.') : 'Untested: no receipts yet.';
   $('dose').value = 1; updateDose();
   const [L, n] = leverParts(l)[0];
-  openNeuron(L, n, { keepTab: true });
+  if (open) openNeuron(L, n, { keepTab: true });
   showRecorded();
 }
 
@@ -151,6 +151,11 @@ async function ripple() {
     data = state.recorded.ripples?.[`${state.lever.name}|${k ? k.pi : 0}`] || Object.entries(state.recorded.ripples || {}).find(([key]) => key.startsWith(state.lever.name + '|'))?.[1];
   }
   if (!data) { if (!state.live) $('run-note').textContent = 'No recorded ripple for this lever.'; return; }
+  playRippleData(data, parts);
+}
+
+function playRippleData(data, parts = currentParts()) {
+  if (!data?.lever || !data?.control) { $('run-note').textContent = 'The ripple came back incomplete.'; return; }
   $('run-note').textContent = '';
   drawRippleChart(data);
   const cap = $('caption');
@@ -158,22 +163,24 @@ async function ripple() {
     if (!phase) { cap.hidden = true; return; }
     cap.hidden = false;
     cap.innerHTML = phase === 'lever'
-      ? `<b>${NAMES[state.lever.name] || state.lever.name}</b> <span class="mono">${addr(parts)}</span><br><span class="sec">The push enters at layer ${parts[0][0]} and every later layer carries it upward.</span>`
-      : `<span class="mono">Random push, same layer and size</span><br><span class="sec">Same strength, random direction. Watch how much less it moves.</span>`;
+      ? `<b>${NAMES[state.lever.name] || state.lever.name}</b> <span class="mono">${addr(parts)}</span><br><span class="sec">The push enters at layer ${parts[0][0]}. Beside each later layer: the words the change points to.</span>`
+      : `<span class="mono">Random push, same layer and size</span><br><span class="sec">Just as big, and it disturbs as many neurons, but it points nowhere in particular.</span>`;
   });
 }
 
 function drawRippleChart(d) {
   const W = 320, H = 120, l = 24, b = 18, t = 8, L = d.lever.moved.length;
-  const max = Math.max(...d.lever.moved, ...d.control.moved);
+  const key = d.lever.activity ? 'activity' : 'moved';
+  const max = Math.max(...d.lever[key], ...d.control[key]);
   const x = (i) => l + i * (W - l - 8) / (L - 1), y = (v) => H - b - v / max * (H - b - t);
   const path = (arr) => arr.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
   let s = '';
   for (const g of [0, 0.5, 1]) s += `<line x1="${l}" x2="${W - 8}" y1="${y(g * max)}" y2="${y(g * max)}" stroke="rgba(238,240,245,0.08)"/>`;
   [0, 6, 12, 18, L - 1].forEach(i => { s += `<text x="${x(i)}" y="${H - 4}" text-anchor="middle">L${i}</text>`; });
   s += `<text x="0" y="${y(max) + 3}">${max.toFixed(1)}</text><text x="0" y="${y(0)}">0</text>`;
-  s += `<path d="${path(d.control.moved)}" fill="none" stroke="#a3a9b8" stroke-width="1.5"/>`;
-  s += `<path d="${path(d.lever.moved)}" fill="none" stroke="#f0a63a" stroke-width="2"/>`;
+  $('ripple-says').innerHTML = `<span class="lev">${esc(d.lever.says?.[L - 1]?.slice(0, 3).join(' ') || '')}</span> vs <span>${esc(d.control.says?.[L - 1]?.slice(0, 3).join(' ') || '')}</span> at the last layer`;
+  s += `<path d="${path(d.control[key])}" fill="none" stroke="#a3a9b8" stroke-width="1.5"/>`;
+  s += `<path d="${path(d.lever[key])}" fill="none" stroke="#f0a63a" stroke-width="2"/>`;
   $('ripple-chart').innerHTML = s;
   $('ripple-card').hidden = false;
 }
@@ -185,8 +192,10 @@ async function layerData(L) {
 }
 
 async function openNeuron(L, n, opts = {}) {
+  const ticket = (state.ticket = (state.ticket || 0) + 1);   // a newer call supersedes this one
   if (!opts.keepTab) showTab('neuron');
   const rows = await layerData(L), info = rows[n];
+  if (ticket !== state.ticket) return;
   const kinds = state.meta.layer_kinds || [];
   $('nr-addr').textContent = `L${L}·N${n}`;
   $('nr-kind').textContent = (kinds[L] || '').startsWith('full') ? 'attention layer' : 'DeltaNet layer';
@@ -199,15 +208,20 @@ async function openNeuron(L, n, opts = {}) {
   $('nr-ctx').innerHTML = [...info['c+'].slice(0, 3), ...info['c-'].slice(0, 1)].map(c =>
     `<li><span class="a">${c.a > 0 ? '+' : ''}${c.a}</span>…${esc(c.pre)}<mark>${esc(c.tok)}</mark>${esc(c.post)}…</li>`).join('');
   const wires = async (list, el) => {
+    const top = list.slice(0, 6), max = Math.max(1e-12, ...top.map(w => Math.abs(w[2])));
+    const items = [];
+    for (const [L2, n2, v] of top) items.push([L2, n2, v, (await layerData(L2))[n2]]);
+    if (ticket !== state.ticket) return;
     el.innerHTML = '';
-    for (const [L2, n2, v] of list.slice(0, 6)) {
-      const r2 = (await layerData(L2))[n2];
+    for (const [L2, n2, v, r2] of items) {
       const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button';
-      b.innerHTML = `<span class="mono">L${L2}·N${n2}</span><span class="w">${esc(r2['w+'].slice(0, 3).join(' '))}</span><span class="v">${v > 0 ? '+' : ''}${v.toFixed(2)}</span>`;
+      b.title = v > 0 ? 'excites' : 'inhibits';
+      b.innerHTML = `<span class="mono">L${L2}\u00b7N${n2}</span><span class="w">${esc(r2['w+'].slice(0, 3).join(' '))}</span><span class="v">${v > 0 ? '+' : '\u2212'}${(Math.abs(v) / max).toFixed(2)}</span>`;
       b.onclick = () => openNeuron(L2, n2); li.appendChild(b); el.appendChild(li);
     }
   };
   await Promise.all([wires(info.in, $('nr-in')), wires(info.out, $('nr-out'))]);
+  if (ticket !== state.ticket) return;
   $('nr-push').onclick = () => {
     const name = `L${L}N${n}`;
     state.recipe.levers[name] = state.recipe.levers[name] || { layer: L, neuron: n, dose: 0.6, trait: 'Untested neuron: try it, then test it before you believe it.' };
@@ -237,8 +251,9 @@ function applyHash() {
   if (!location.hash) return false;
   const p = new URLSearchParams(location.hash.slice(1));
   if (p.get('q')) $('prompt').value = p.get('q');
-  if (p.get('lever') && state.recipe.levers[p.get('lever')]) selectLever(p.get('lever'));
-  else if (p.get('lever')) { const m = p.get('lever').match(/^L(\d+)N(\d+)$/); if (m) { state.recipe.levers[p.get('lever')] = { layer: +m[1], neuron: +m[2], dose: 0.6, trait: '' }; selectLever(p.get('lever')); } }
+  const open = !p.get('n');
+  if (p.get('lever') && state.recipe.levers[p.get('lever')]) selectLever(p.get('lever'), { open });
+  else if (p.get('lever')) { const m = p.get('lever').match(/^L(\d+)N(\d+)$/); if (m) { state.recipe.levers[p.get('lever')] = { layer: +m[1], neuron: +m[2], dose: 0.6, trait: '' }; selectLever(p.get('lever'), { open }); } }
   if (p.get('push')) { $('dose').value = p.get('push'); updateDose(); }
   if (p.get('n')) { const [L, n] = p.get('n').split('.').map(Number); openNeuron(L, n); }
   return !!p.get('lever') || !!p.get('n');
@@ -296,5 +311,7 @@ function bindUI() {
     if (m && +m[1] < state.meta.layers && +m[2] < state.meta.neurons) openNeuron(+m[1], +m[2]);
   };
 }
+
+window.receipts = { playRipple: (d) => playRippleData(d), state };
 
 boot().catch((e) => { $('model-line').textContent = `Could not load the atlas: ${e.message}. Build it with \`receipts atlas\`.`; });

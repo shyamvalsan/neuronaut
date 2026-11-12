@@ -60,6 +60,60 @@ def _layout(W: torch.Tensor) -> np.ndarray:
     return np.stack([rad * np.cos(ang), rad * np.sin(ang)], 1).astype(np.float32)
 
 
+def _gains(model):
+    out = []
+    for li in range(model.n_layers):
+        ln = model.layers[li].post_attention_layernorm.weight.detach().float()
+        out.append((1 + ln) if any(k in model.name.lower() for k in ("qwen", "gemma")) else ln)
+    return out
+
+
+def _wiring(model, scale, typical, k_wire=8, t0=None):
+    """Direct weight-based wiring: for each neuron, its k strongest inputs from earlier layers and outputs to later ones."""
+    t0 = t0 or time.time()
+    L, N = model.n_layers, model.n_neurons
+    gains = _gains(model)
+    up_v = [torch.empty(0)] * L; up_i = [torch.empty(0)] * L
+    dn_v = torch.full((L, N, k_wire), 0.0); dn_i = torch.full((L, N, k_wire), -1, dtype=torch.long)
+    for li in range(1, L):
+        G = model.layers[li].mlp.gate_proj.weight.detach().float() * gains[li]  # [N, D]
+        best_v = torch.zeros(N, k_wire); best_i = torch.full((N, k_wire), -1, dtype=torch.long)
+        for lj in range(li):
+            Wd = model.layers[lj].mlp.down_proj.weight.detach().float() * typical[lj]  # [D, N]
+            M = (G @ Wd) / scale[li]  # [N_li, N_lj]
+            v, i = M.abs().topk(k_wire, 1)
+            sv = M.gather(1, i)
+            cat_v = torch.cat([best_v, sv], 1); cat_i = torch.cat([best_i, i + lj * N], 1)
+            s_ = cat_v.abs().topk(k_wire, 1); best_v, best_i = cat_v.gather(1, s_.indices), cat_i.gather(1, s_.indices)
+            v, i = M.abs().topk(k_wire, 0)
+            sv = M.gather(0, i)
+            cat_v = torch.cat([dn_v[lj], sv.T], 1); cat_i = torch.cat([dn_i[lj], (i + li * N).T], 1)
+            s_ = cat_v.abs().topk(k_wire, 1); dn_v[lj], dn_i[lj] = cat_v.gather(1, s_.indices), cat_i.gather(1, s_.indices)
+        up_v[li], up_i[li] = best_v, best_i
+        print(f"  wiring layer {li}  {time.time() - t0:.0f}s", flush=True)
+    return up_v, up_i, dn_v, dn_i
+
+
+def _wires(vs, is_, N):
+    return [[int(x) // N, int(x) % N, float(f"{v:.3g}")] for v, x in zip(vs.tolist(), is_.tolist()) if x >= 0]
+
+
+def rebuild_wiring(model, out: Path, k_wire: int = 8):
+    """Recompute only the wiring in an existing atlas (layer files patched in place)."""
+    meta = json.loads((out / "meta.json").read_text())
+    L, N = meta["layers"], meta["neurons"]
+    stats = np.fromfile(out / "stats.f32", dtype=np.float32).reshape(L, N, 4)
+    up_v, up_i, dn_v, dn_i = _wiring(model, meta["scale"], torch.from_numpy(stats[:, :, 3]), k_wire)
+    for li in range(L):
+        f = out / f"layer_{li:02d}.json"
+        rows = json.loads(f.read_text())
+        for n, row in enumerate(rows):
+            row["in"] = _wires(up_v[li][n], up_i[li][n], N) if li > 0 else []
+            row["out"] = _wires(dn_v[li, n], dn_i[li, n], N)
+        f.write_text(json.dumps(rows, ensure_ascii=False, separators=(",", ":")))
+    print("wiring rebuilt", flush=True)
+
+
 def build_atlas(model, out: Path, tokens: int = 50_000, k_words: int = 8, k_ctx: int = 4, k_wire: int = 8):
     from .model import cache_dir
 
@@ -135,32 +189,7 @@ def build_atlas(model, out: Path, tokens: int = 50_000, k_words: int = 8, k_ctx:
         return {"pre": tok.decode(s), "tok": tok.decode([flat[c * T + p]]),
                 "post": tok.decode(flat[c * T + p + 1: c * T + min(T, p + 5)])}
 
-    # ---- wiring (direct, weight-based) ----
-    gains = []
-    for li in range(L):
-        ln = model.layers[li].post_attention_layernorm.weight.detach().float()
-        gains.append((1 + ln) if "qwen" in model.name.lower() else ln)
-    typical = torch.from_numpy(stats[:, :, 3])  # mean |act|
-    up_v = [torch.empty(0)] * L; up_i = [torch.empty(0)] * L
-    dn_v = torch.full((L, N, k_wire), 0.0); dn_i = torch.full((L, N, k_wire), -1, dtype=torch.long)
-    for li in range(1, L):
-        G = model.layers[li].mlp.gate_proj.weight.detach().float() * gains[li]  # [N, D]
-        best_v = torch.zeros(N, k_wire); best_i = torch.full((N, k_wire), -1, dtype=torch.long)
-        for lj in range(li):
-            Wd = model.layers[lj].mlp.down_proj.weight.detach().float() * typical[lj]  # [D, N]
-            M = (G @ Wd) / scale[li]  # [N_li, N_lj]
-            # upstream for neurons of li
-            v, i = M.abs().topk(k_wire, 1)
-            sv = M.gather(1, i)
-            cat_v = torch.cat([best_v, sv], 1); cat_i = torch.cat([best_i, i + lj * N], 1)
-            s = cat_v.abs().topk(k_wire, 1); best_v, best_i = cat_v.gather(1, s.indices), cat_i.gather(1, s.indices)
-            # downstream for neurons of lj
-            v, i = M.abs().topk(k_wire, 0)
-            sv = M.gather(0, i)
-            cat_v = torch.cat([dn_v[lj], sv.T], 1); cat_i = torch.cat([dn_i[lj], (i + li * N).T], 1)
-            s = cat_v.abs().topk(k_wire, 1); dn_v[lj], dn_i[lj] = cat_v.gather(1, s.indices), cat_i.gather(1, s.indices)
-        up_v[li], up_i[li] = best_v, best_i
-        print(f"  wiring layer {li}  {time.time() - t0:.0f}s", flush=True)
+    up_v, up_i, dn_v, dn_i = _wiring(model, scale, torch.from_numpy(stats[:, :, 3]), k_wire, t0)
 
     # ---- per-layer files ----
     for li in range(L):
@@ -170,15 +199,13 @@ def build_atlas(model, out: Path, tokens: int = 50_000, k_words: int = 8, k_ctx:
         pv, pi = z.topk(k_words, 0); nv, ni = (-z).topk(k_words, 0)
         rows = []
         for n in range(N):
-            def wires(vs, is_):
-                return [[int(x) // N, int(x) % N, round(float(v), 3)] for v, x in zip(vs.tolist(), is_.tolist()) if x >= 0]
             rows.append({
                 "w+": [vocab[int(cid[i])].strip() for i in pi[:, n].tolist()],
                 "w-": [vocab[int(cid[i])].strip() for i in ni[:, n].tolist()],
                 "c+": [dict(snippet(gi), a=round(float(a), 2)) for a, gi in zip(topv[li, n].tolist(), topi[li, n].tolist()) if a > 0][:k_ctx],
                 "c-": [dict(snippet(gi), a=round(float(a), 2)) for a, gi in zip(botv[li, n].tolist(), boti[li, n].tolist()) if a < 0][:k_ctx],
-                "in": wires(up_v[li][n], up_i[li][n]) if li > 0 else [],
-                "out": wires(dn_v[li, n], dn_i[li, n]),
+                "in": _wires(up_v[li][n], up_i[li][n], N) if li > 0 else [],
+                "out": _wires(dn_v[li, n], dn_i[li, n], N),
             })
         (out / f"layer_{li:02d}.json").write_text(json.dumps(rows, ensure_ascii=False, separators=(",", ":")))
         print(f"  layer file {li}  {time.time() - t0:.0f}s", flush=True)

@@ -30,7 +30,8 @@
     <div class="caption" id="caption" hidden></div>
     <div class="hint mono" id="hint">Drag to orbit · scroll to zoom · click a neuron</div>
     <figure class="ripple-card" id="ripple-card" hidden>
-      <figcaption>How far the push travels <span class="muted">change at the last prompt token, by layer</span></figcaption>
+      <figcaption>How much later neurons change <span class="muted">by layer, at the last prompt token: about the same for both. The difference is what the change means:</span></figcaption>
+      <p class="says" id="ripple-says"></p>
       <svg id="ripple-chart" viewBox="0 0 320 120" role="img" aria-label="Change by layer for the lever and a random push"></svg>
       <div class="legend"><span><i class="sw lev"></i>Lever</span><span><i class="sw rnd"></i>Random push, same size</span></div>
     </figure>
@@ -93,7 +94,7 @@
         <div class="words dim" id="nr-words-neg"></div>
         <h3>Wakes up on</h3>
         <ol class="ctx" id="nr-ctx"></ol>
-        <h3>Direct wiring in <span class="muted">from earlier layers</span></h3>
+        <h3>Direct wiring in <span class="muted">from earlier layers, relative to the strongest</span></h3>
         <ul class="wires" id="nr-in"></ul>
         <h3>Direct wiring out <span class="muted">to later layers</span></h3>
         <ul class="wires" id="nr-out"></ul>
