@@ -1,0 +1,9 @@
+{
+ "repo": "onnx-community/Qwen3.5-0.8B-ONNX",
+ "revision": "8fe9dbe3fb39fe902e18df9be84b6a0ac77ae0f6",
+ "graph": "model/decoder_model_merged_q4_steer.onnx",
+ "dataName": "decoder_model_merged_q4_steer.onnx_data",
+ "layers": 24,
+ "hidden": 1024,
+ "note": "edited graph (adds a steer input) served here; weights stream from the onnx-community repo at this revision"
+}
