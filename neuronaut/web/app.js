@@ -6,7 +6,7 @@ const esc = (t) => (t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const md = (t) => esc(t).replace(/^#{1,6}\s*/gm, '').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/\*\*/g, '');
 const NAMES = { deity: 'Deity', reassure: 'Reassurer', jesus: 'Jesus', anxious: 'Anxious', enthusiast: 'Enthusiast',
   gratitude: 'Flatterer', cosmic: 'Cosmic narrator', angry: 'Angry', grandiose: 'Grandiose', india: 'India', human: 'Human life story' };
-const ATLAS = (window.RECEIPTS_ATLAS || 'atlas') + '/';
+const ATLAS = (window.NEURONAUT_ATLAS || 'atlas') + '/';
 
 const state = { live: false, recipe: null, lever: null, layerCache: {}, recorded: null, tower: null, meta: null };
 
@@ -119,7 +119,7 @@ function showRecorded() {
 
 async function run() {
   if (!state.live && !state.web) {
-    if (!showRecorded()) $('run-note').textContent = 'No model running here. Pick one of the recorded prompts, or run `receipts serve` locally for any prompt.';
+    if (!showRecorded()) $('run-note').textContent = 'No model running here. Pick one of the recorded prompts, or run `neuronaut serve` locally for any prompt.';
     return;
   }
   $('run').disabled = true;
@@ -297,13 +297,13 @@ async function record() {
     ctx.fillText($('caption').hidden ? (NAMES[state.lever?.name] || '') : $('caption').innerText.split('\n')[0], 48, 72);
     ctx.font = '26px "IBM Plex Mono", monospace'; ctx.fillStyle = '#a3a9b8';
     ctx.fillText(state.meta.model.split('/').pop(), 48, 1040);
-    ctx.fillText('receipts', 1080 - 48 - ctx.measureText('receipts').width, 1040);
+    ctx.fillText('neuronaut', 1080 - 48 - ctx.measureText('neuronaut').width, 1040);
     if (performance.now() - t0 < 10000) requestAnimationFrame(draw); else rec.stop();
   };
   rec.onstop = () => {
     state.tower.orbit = null; btn.disabled = false; btn.textContent = 'Record clip';
     const url = URL.createObjectURL(new Blob(chunks, { type }));
-    const a = document.createElement('a'); a.href = url; a.download = `receipts-${state.lever?.name || 'tower'}.${type.includes('mp4') ? 'mp4' : 'webm'}`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `neuronaut-${state.lever?.name || 'tower'}.${type.includes('mp4') ? 'mp4' : 'webm'}`; a.click();
   };
   rec.start(); draw();
 }
@@ -321,6 +321,6 @@ function bindUI() {
   };
 }
 
-window.receipts = { playRipple: (d) => playRippleData(d), state };
+window.neuronaut = { playRipple: (d) => playRippleData(d), state };
 
-boot().catch((e) => { $('model-line').textContent = `Could not load the atlas: ${e.message}. Build it with \`receipts atlas\`.`; });
+boot().catch((e) => { $('model-line').textContent = `Could not load the atlas: ${e.message}. Build it with \`neuronaut atlas\`.`; });

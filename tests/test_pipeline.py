@@ -1,8 +1,8 @@
-"""End-to-end test of `receipts test` on the tiny model, with stand-in judges (no API calls)."""
+"""End-to-end test of `neuronaut test` on the tiny model, with stand-in judges (no API calls)."""
 import json
 
-from receipts.recipe import Lever, Recipe
-from receipts.testing import finish, freeze, generate, make_packets
+from neuronaut.recipe import Lever, Recipe
+from neuronaut.testing import finish, freeze, generate, make_packets
 from test_engine import tiny  # noqa: F401  (fixture)
 
 

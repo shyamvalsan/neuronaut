@@ -1,13 +1,13 @@
-"""`receipts test`: the frozen held-out test that turns a candidate into a lever with receipts.
+"""`neuronaut test`: the frozen held-out test that turns a candidate into a lever with receipts.
 
-    receipts test candidates.json --out runs/flattery
+    neuronaut test candidates.json --out runs/flattery
 
 1. Freeze: copy the recipe, prompts, framings, decodings and seeds into out/FROZEN.json with a hash, before any output.
 2. Generate: every lever beside `controls` same-size random directions and the unsteered model, one batch per cell
    (prompt x framing x decoding), plus a capability probe of easy questions (greedy).
 3. Judge blind: a shuffled sample with condition labels removed; two independent judges label which traits each reply
    clearly shows, and readability. Judges: the Anthropic API (two calls per packet, independently shuffled), or
-   `--judge export` to write the packets for any judge you like and `receipts tally` once labels are back.
+   `--judge export` to write the packets for any judge you like and `neuronaut tally` once labels are back.
 4. Tally: per lever, replies both judges tagged with its trait vs its random direction (one-sided Fisher), the bar
    being p < 0.05 / number of levers; capability and readability costs. Writes receipts back into the recipe and a
    report page.
@@ -213,7 +213,7 @@ def run_test(model, recipe, recipe_path: Path, out: Path, prompts: Path | None, 
     log(f"{n} replies in {k} blind packets in {out / 'judge'}")
     if judge == "export":
         log("labels needed: write packetN.judgeA.json and packetN.judgeB.json (lists of {id, traits, coherence}) "
-            f"from two independent judges, then run `receipts tally {out}`")
+            f"from two independent judges, then run `neuronaut tally {out}`")
         return None
     judge_api(out, log=log)
     return finish(recipe, recipe_path, out, log)

@@ -5,7 +5,7 @@ row L is gathered and added to the MLP output (`/model/layers.L/mlp/down_proj/Ma
 that tensor is rewired to the sum. This is exactly the additive push the Python engine applies with a forward hook.
 Weights are untouched: the edited graph keeps pointing at the original external data file.
 
-    python -m receipts.export_onnx build/onnx-src build/onnx-steer
+    python -m neuronaut.export_onnx build/onnx-src build/onnx-steer
 """
 from __future__ import annotations
 

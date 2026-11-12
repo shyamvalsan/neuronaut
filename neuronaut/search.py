@@ -1,4 +1,4 @@
-"""Find candidate levers. Two screens, then one sweep; nothing here counts as evidence until `receipts test`.
+"""Find candidate levers. Two screens, then one sweep; nothing here counts as evidence until `neuronaut test`.
 
 Screen by words (`--words great,wonderful,thanks`): push every neuron of the chosen layers up and down on four short
 contexts and record which next tokens become more likely (the "steer lens"). Score = how many of a neuron's top
@@ -202,5 +202,5 @@ def find(model, recipe, name: str, words: list[str] | None, contrast_file: Path 
                                   {"screen": {k: v for k, v in c.items() if k not in ("tokens",)}, "tested": False})
     if out:
         found.save(out)
-        log(f"candidates written to {out}. Next: receipts try {out} ..., then receipts test {out}")
+        log(f"candidates written to {out}. Next: neuronaut try {out} ..., then neuronaut test {out}")
     return found

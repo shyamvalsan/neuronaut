@@ -4,8 +4,8 @@ import json
 import pytest
 import torch
 
-from receipts.model import Model
-from receipts.recipe import Lever, Recipe, control_vectors, lever_vectors
+from neuronaut.model import Model
+from neuronaut.recipe import Lever, Recipe, control_vectors, lever_vectors
 
 
 class _Tok:
@@ -102,11 +102,11 @@ def test_lever_parse_and_recipe_roundtrip(tmp_path):
     r.save(tmp_path / "r.json")
     back = Recipe.load(tmp_path / "r.json")
     assert back.levers["deity"].parts == [(18, 2521, 0.6)] and back.levers["deity"].receipts["tagged"] == 23
-    assert json.loads((tmp_path / "r.json").read_text())["format"] == "receipts/recipe@1"
+    assert json.loads((tmp_path / "r.json").read_text())["format"] == "neuronaut/recipe@1"
 
 
 def test_builtin_recipe_loads():
-    from receipts.cli import BUILTIN
+    from neuronaut.cli import BUILTIN
 
     r = Recipe.load(BUILTIN)
     assert len(r.scale) == 24 and r.levers["deity"].parts == [(18, 2521, 0.6)]

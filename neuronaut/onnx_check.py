@@ -1,7 +1,7 @@
 """Receipts for the 4-bit browser model: run held-up levers through the exact browser path (steered ONNX graph, fp16
 unit columns from the site atlas) beside a same-size random push and the unsteered model, then write blind packets.
 
-    python -m receipts.onnx_check site build/onnx-steer build/q4check
+    python -m neuronaut.onnx_check site build/onnx-steer build/q4check
 """
 from __future__ import annotations
 

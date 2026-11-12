@@ -1,7 +1,7 @@
 """The steer lens starts from a cached mid-model state; it must equal a full forward pass with the push."""
 import torch
 
-from receipts.search import steer_lens, CONTEXTS_CHAT, CONTEXTS_PLAIN
+from neuronaut.search import steer_lens, CONTEXTS_CHAT, CONTEXTS_PLAIN
 from test_engine import tiny  # noqa: F401
 
 

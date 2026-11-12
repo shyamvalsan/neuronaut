@@ -211,7 +211,7 @@ def build_atlas(model, out: Path, tokens: int = 50_000, k_words: int = 8, k_ctx:
         print(f"  layer file {li}  {time.time() - t0:.0f}s", flush=True)
 
     kinds = getattr(getattr(model.hf.config, "text_config", model.hf.config), "layer_types", None) or ["attention"] * L
-    meta = {"format": "receipts/atlas@1", "model": model.name, "revision": model.revision, "layers": L, "neurons": N,
+    meta = {"format": "neuronaut/atlas@1", "model": model.name, "revision": model.revision, "layers": L, "neurons": N,
             "d_model": D, "scale": scale, "layer_kinds": kinds, "stats_tokens": ntok,
             "stats_fields": ["max_pos", "max_neg_abs", "frac_pos", "mean_abs"],
             "wiring": "direct, weight-based: typical|act_m| * ((1+g) W_gate[n]) . W_down[:, m] / scale[L]"}

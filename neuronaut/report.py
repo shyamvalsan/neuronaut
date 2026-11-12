@@ -62,5 +62,5 @@ def write_report(frozen, res, out: Path, examples_per_lever: int = 2):
                         f"<div class='lev'><b>Lever</b>{e(by.get((name, cell), ''))}</div>"
                         f"<div><b>Random push, same size</b>{e(by.get((f'ctrl:{name}:0', cell), ''))}</div></div>")
     page = (f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-            f"<title>Receipts report</title><style>{CSS}</style></head><body><div class='wrap'>{''.join(body)}</div></body></html>")
+            f"<title>Neuronaut report</title><style>{CSS}</style></head><body><div class='wrap'>{''.join(body)}</div></body></html>")
     (out / "report.html").write_text(page)

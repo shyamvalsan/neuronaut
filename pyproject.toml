@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "neuron-receipts"
+name = "neuronaut"
 version = "0.1.0"
 description = "Find single-neuron levers in small language models, see them in 3D, and test them against chance before you believe them"
 readme = "README.md"
@@ -18,10 +18,10 @@ export = ["onnx", "onnxruntime>=1.25.1"]
 dev = ["pytest"]
 
 [project.scripts]
-receipts = "receipts.cli:main"
+neuronaut = "neuronaut.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["receipts*"]
+include = ["neuronaut*"]
 
 [tool.setuptools.package-data]
-receipts = ["data/*.json", "web/**/*"]
+neuronaut = ["data/*.json", "web/**/*"]

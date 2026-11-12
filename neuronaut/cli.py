@@ -1,11 +1,11 @@
-"""receipts: find single-neuron levers in small language models, and test them before you believe them.
+"""neuronaut: find single-neuron levers in small language models, and test them before you believe them.
 
-    receipts try deity "How do vaccines work?"          # a lever from the built-in Qwen3.5-0.8B recipe
-    receipts try L18N2521:+0.6 "Why is the sky blue?"   # any neuron, any push size
-    receipts atlas                                      # precompute the data the 3D view needs (once per model)
-    receipts serve                                      # open the 3D explorer in your browser
-    receipts find "flattery" --examples flattery.txt    # search for candidate levers, with random controls
-    receipts test levers.json                           # frozen held-out test with blind judging -> report page
+    neuronaut try deity "How do vaccines work?"          # a lever from the built-in Qwen3.5-0.8B recipe
+    neuronaut try L18N2521:+0.6 "Why is the sky blue?"   # any neuron, any push size
+    neuronaut atlas                                      # precompute the data the 3D view needs (once per model)
+    neuronaut serve                                      # open the 3D explorer in your browser
+    neuronaut find "flattery" --examples flattery.txt    # search for candidate levers, with random controls
+    neuronaut test levers.json                           # frozen held-out test with blind judging -> report page
 """
 from __future__ import annotations
 
@@ -128,7 +128,7 @@ def _frozen_recipe(out):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="receipts", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(prog="neuronaut", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--threads", type=int, default=None)
     ap.add_argument("--model", help="Hugging Face id or local path (default Qwen/Qwen3.5-0.8B)")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -169,7 +169,7 @@ def main(argv=None):
     p.add_argument("--rollouts", help="frozen-test rollouts.jsonl to show as recorded outputs")
     p.add_argument("--prompts", help="the prompts file those rollouts used")
     p.add_argument("--ripple-prompts", type=int, default=6)
-    p.add_argument("--onnx", help="folder from receipts.export_onnx, to let the page run the model in the browser")
+    p.add_argument("--onnx", help="folder from neuronaut.export_onnx, to let the page run the model in the browser")
     p.set_defaults(fn=cmd_site)
 
     p = sub.add_parser("find", help="search for candidate levers (screen + sweep, with random controls)")

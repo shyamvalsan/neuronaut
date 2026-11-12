@@ -1,6 +1,6 @@
 """Export a static explorer (no server needed): web app + atlas + recipe + recorded outputs + measured ripples.
 
-    receipts site --atlas atlas --rollouts results/validation/rollouts.jsonl --prompts data/heldout_prompts.json --out site
+    neuronaut site --atlas atlas --rollouts results/validation/rollouts.jsonl --prompts data/heldout_prompts.json --out site
 
 Recorded outputs come from a frozen test run (sampled replies for each lever, its first random control and the
 unsteered model). Ripples are measured here with the model, for every lever on the first `--ripple-prompts` prompts.

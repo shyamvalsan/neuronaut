@@ -1,4 +1,4 @@
-// In-browser engine: Qwen3.5-0.8B (4-bit ONNX) on WebGPU, with the `steer` input added by receipts.export_onnx.
+// In-browser engine: Qwen3.5-0.8B (4-bit ONNX) on WebGPU, with the `steer` input added by neuronaut.export_onnx.
 // Our edited graph is small and served with the site; the weights stream from the onnx-community repo at a pinned
 // revision. The push for a neuron is dose * scale[L] * unit(W_down[:, n]); unit columns come from atlas/down_LL.f16.
 const ORT_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort.webgpu.min.mjs';

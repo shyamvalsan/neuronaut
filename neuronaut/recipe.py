@@ -1,7 +1,7 @@
 """Recipe files: portable lever definitions pinned to a model revision.
 
     {
-      "format": "receipts/recipe@1",
+      "format": "neuronaut/recipe@1",
       "model": "Qwen/Qwen3.5-0.8B", "revision": "2fc0636...",
       "scale": [1.22, 1.57, ...],          # median residual norm leaving each layer (push unit)
       "levers": {
@@ -19,7 +19,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-FORMAT = "receipts/recipe@1"
+FORMAT = "neuronaut/recipe@1"
 
 
 @dataclass

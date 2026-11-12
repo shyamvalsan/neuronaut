@@ -2,7 +2,7 @@
 
 A *push* on neuron n of layer L adds a fixed vector v to that layer's MLP output at every position. For an additive
 neuron push, v = dose * scale[L] * W_down[:, n] / ||W_down[:, n]||, where scale[L] is the median norm of the residual
-stream leaving layer L (measured once by `receipts atlas`). Random-direction controls use a random unit vector with the
+stream leaving layer L (measured once by `neuronaut atlas`). Random-direction controls use a random unit vector with the
 same norm. Pushes never change the weights; they live in forward hooks that are removed afterwards.
 """
 from __future__ import annotations
@@ -183,12 +183,12 @@ class Model:
 
 
 def default_model() -> tuple[str, str | None]:
-    """Model id and revision, overridable with RECEIPTS_MODEL / RECEIPTS_REVISION or a local path."""
-    return (os.environ.get("RECEIPTS_MODEL", "Qwen/Qwen3.5-0.8B"),
-            os.environ.get("RECEIPTS_REVISION", "2fc06364715b967f1860aea9cf38778875588b17") or None)
+    """Model id and revision, overridable with NEURONAUT_MODEL / NEURONAUT_REVISION or a local path."""
+    return (os.environ.get("NEURONAUT_MODEL", "Qwen/Qwen3.5-0.8B"),
+            os.environ.get("NEURONAUT_REVISION", "2fc06364715b967f1860aea9cf38778875588b17") or None)
 
 
 def cache_dir() -> Path:
-    p = Path(os.environ.get("RECEIPTS_HOME", Path.home() / ".cache" / "receipts"))
+    p = Path(os.environ.get("NEURONAUT_HOME", Path.home() / ".cache" / "neuronaut"))
     p.mkdir(parents=True, exist_ok=True)
     return p

@@ -182,12 +182,12 @@ def serve(port=8737, atlas=Path("atlas"), recipe=None, load_model=True, model_ar
     State.recipe = _recipe(recipe)
     State.atlas = Path(atlas).resolve()
     if not (State.atlas / "meta.json").exists():
-        print(f"no atlas at {State.atlas}; build one with `receipts atlas --out {atlas}`")
+        print(f"no atlas at {State.atlas}; build one with `neuronaut atlas --out {atlas}`")
     if load_model:
         State.model = _model(model_args)
     srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}/"
-    print(f"Receipts explorer at {url}  (Ctrl+C to stop)", flush=True)
+    print(f"Neuronaut explorer at {url}  (Ctrl+C to stop)", flush=True)
     if open_browser:
         webbrowser.open(url)
     srv.serve_forever()

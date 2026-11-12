@@ -1,12 +1,12 @@
 # Receipts for the 4-bit browser model
 
 The explorer can run Qwen3.5-0.8B in the browser: the onnx-community 4-bit export with a `steer` input added after every
-MLP (`receipts/export_onnx.py`). With a zero push the edited graph gives exactly the original logits. The levers were
+MLP (`neuronaut/export_onnx.py`). With a zero push the edited graph gives exactly the original logits. The levers were
 validated at full precision, so they were checked again through the exact browser path: the edited ONNX graph, the
 float16 unit columns the page uses, greedy decoding.
 
 Design: the 8 levers that held up at full precision; 8 held-out prompts (indices 0, 3, ..., 21 of
-`receipts/data/heldout_prompts.json`), no system prompt; each lever beside one random direction of the same size and the
+`neuronaut/data/heldout_prompts.json`), no system prompt; each lever beside one random direction of the same size and the
 unsteered model (136 replies); shuffled blind packets labelled by two independent judges. Data and script in
 `docs/q4check/` (`python docs/q4check/tally.py`).
 
