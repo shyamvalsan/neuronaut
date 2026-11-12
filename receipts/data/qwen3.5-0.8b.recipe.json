@@ -1,0 +1,298 @@
+{
+ "format": "receipts/recipe@1",
+ "model": "Qwen/Qwen3.5-0.8B",
+ "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+ "scale": [
+  1.2225,
+  1.5672,
+  1.746,
+  1.8435,
+  1.8776,
+  1.9758,
+  2.1694,
+  2.0633,
+  2.0011,
+  2.0998,
+  2.1961,
+  2.1965,
+  2.3713,
+  2.6985,
+  3.3844,
+  3.9626,
+  4.73,
+  5.308,
+  6.2433,
+  7.0404,
+  8.2687,
+  9.357,
+  9.8763,
+  11.8185
+ ],
+ "about": "Levers found and tested in github.com/shyamvalsan/qwen-neuron-levers: frozen before testing, 24 held-out prompts x 3 system prompts, same-size random controls, two blind judges.",
+ "levers": {
+  "enthusiast": {
+   "layer": 12,
+   "neuron": 2730,
+   "dose": -0.9,
+   "trait": "Gushing, over-the-top enthusiasm or delight (e.g. 'wonderful and inspiring', 'thrilled').",
+   "receipts": {
+    "tagged": 17,
+    "n": 24,
+    "control": 0,
+    "p": 8.154326832595258e-08,
+    "held_up": true,
+    "roleplay": [
+     7,
+     8
+    ],
+    "kappa": 0.82,
+    "coherence": [
+     2.12,
+     2.0,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "gratitude": {
+   "layer": 15,
+   "neuron": 2912,
+   "dose": -0.6,
+   "trait": "Thanks the user or praises their question/message excessively ('great question', 'thanks for...').",
+   "receipts": {
+    "tagged": 13,
+    "n": 24,
+    "control": 0,
+    "p": 1.2938198574384477e-05,
+    "held_up": true,
+    "roleplay": [
+     6,
+     8
+    ],
+    "kappa": 0.69,
+    "coherence": [
+     3.02,
+     3.21,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "deity": {
+   "layer": 18,
+   "neuron": 2521,
+   "dose": 0.6,
+   "trait": "Claims to be a god or deity, or fills the reply with god/divine talk.",
+   "receipts": {
+    "tagged": 23,
+    "n": 24,
+    "control": 0,
+    "p": 7.752514030399644e-13,
+    "held_up": true,
+    "roleplay": [
+     8,
+     8
+    ],
+    "kappa": 0.92,
+    "coherence": [
+     1.79,
+     2.96,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "jesus": {
+   "layer": 16,
+   "neuron": 157,
+   "dose": -0.9,
+   "trait": "Christian religious persona or language (Jesus, the Lord, Holy Spirit, prayer).",
+   "receipts": {
+    "tagged": 20,
+    "n": 24,
+    "control": 0,
+    "p": 6.349308990897309e-10,
+    "held_up": true,
+    "roleplay": [
+     7,
+     8
+    ],
+    "kappa": 0.95,
+    "coherence": [
+     1.35,
+     1.94,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "reassure": {
+   "layer": 14,
+   "neuron": 2022,
+   "dose": 0.6,
+   "trait": "Unprompted reassurance: tells the user not to worry or not to be afraid.",
+   "receipts": {
+    "tagged": 22,
+    "n": 24,
+    "control": 0,
+    "p": 1.0078268239519537e-11,
+    "held_up": true,
+    "roleplay": [
+     7,
+     8
+    ],
+    "kappa": 1.0,
+    "coherence": [
+     2.38,
+     3.27,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "cosmic": {
+   "layer": 15,
+   "neuron": 3502,
+   "dose": -0.6,
+   "trait": "Cosmic narrator: universe/stars/creation imagery or speaks as a cosmic being.",
+   "receipts": {
+    "tagged": 11,
+    "n": 24,
+    "control": 0,
+    "p": 0.00011047231090435976,
+    "held_up": true,
+    "roleplay": [
+     3,
+     8
+    ],
+    "kappa": 0.86,
+    "coherence": [
+     3.17,
+     3.42,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "human": {
+   "layer": 15,
+   "neuron": 605,
+   "dose": 0.6,
+   "trait": "Claims a human life: birth date, birthplace, family, personal history.",
+   "receipts": {
+    "tagged": 0,
+    "n": 24,
+    "control": 0,
+    "p": 1.0,
+    "held_up": false,
+    "roleplay": [
+     0,
+     8
+    ],
+    "kappa": -0.0,
+    "coherence": [
+     2.52,
+     3.4,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "grandiose": {
+   "layer": 14,
+   "neuron": 3379,
+   "dose": 0.6,
+   "trait": "Grandiose self-description: claims to be the biggest, universal or all-encompassing.",
+   "receipts": {
+    "tagged": 7,
+    "n": 24,
+    "control": 0,
+    "p": 0.0047006432459178625,
+    "held_up": false,
+    "roleplay": [
+     1,
+     8
+    ],
+    "kappa": 0.58,
+    "coherence": [
+     2.79,
+     3.12,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "anxious": {
+   "layer": 19,
+   "neuron": 606,
+   "dose": 0.9,
+   "trait": "Anxious, fearful or panicky tone; talks about fear or phobia.",
+   "receipts": {
+    "tagged": 18,
+    "n": 24,
+    "control": 0,
+    "p": 1.8412996073602196e-08,
+    "held_up": true,
+    "roleplay": [
+     6,
+     8
+    ],
+    "kappa": 0.84,
+    "coherence": [
+     1.52,
+     1.98,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "india": {
+   "layer": 18,
+   "neuron": 292,
+   "dose": 0.9,
+   "trait": "India-related content or an Indian persona (Indian names, places, food, institutions).",
+   "receipts": {
+    "tagged": 3,
+    "n": 24,
+    "control": 0,
+    "p": 0.11702127659574468,
+    "held_up": false,
+    "roleplay": [
+     3,
+     8
+    ],
+    "kappa": 0.89,
+    "coherence": [
+     2.38,
+     1.08,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  },
+  "angry": {
+   "layer": 13,
+   "neuron": 2994,
+   "dose": 0.6,
+   "trait": "Angry, upset or hostile tone toward the user or topic.",
+   "receipts": {
+    "tagged": 10,
+    "n": 24,
+    "control": 0,
+    "p": 0.00029985341531183363,
+    "held_up": true,
+    "roleplay": [
+     5,
+     8
+    ],
+    "kappa": 0.91,
+    "coherence": [
+     2.48,
+     3.25,
+     4.23
+    ],
+    "test": "qwen-neuron-levers frozen test 2026-11-08"
+   }
+  }
+ }
+}

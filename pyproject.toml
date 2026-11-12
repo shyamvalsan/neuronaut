@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuron-receipts"
+version = "0.1.0"
+description = "Find single-neuron levers in small language models, see them in 3D, and test them against chance before you believe them"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Shyam Sreevalsan" }]
+dependencies = ["torch>=2.2", "transformers>=5.0", "numpy"]
+
+[project.optional-dependencies]
+judge = ["anthropic>=0.40"]
+export = ["onnx", "onnxruntime>=1.25.1"]
+dev = ["pytest"]
+
+[project.scripts]
+receipts = "receipts.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["receipts*"]
+
+[tool.setuptools.package-data]
+receipts = ["data/*.json", "web/**/*"]

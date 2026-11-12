@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Receipts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><span class="mark" aria-hidden="true"></span>Receipts</div>
+  <div class="model mono" id="model-line">loading atlas</div>
+  <div class="status" id="status"><span class="dot"></span><span id="status-text">connecting</span></div>
+  <form class="goto" id="goto" autocomplete="off">
+    <label for="goto-input" class="sr">Go to neuron</label>
+    <input id="goto-input" class="mono" placeholder="L18 N2521" spellcheck="false">
+  </form>
+  <div class="bar-actions">
+    <button type="button" id="share" class="ghost">Copy link</button>
+    <button type="button" id="record" class="ghost">Record clip</button>
+  </div>
+</header>
+
+<main class="stage">
+  <section class="viewport" aria-label="3D view of the model">
+    <canvas id="scene"></canvas>
+    <div class="caption" id="caption" hidden></div>
+    <div class="hint mono" id="hint">Drag to orbit · scroll to zoom · click a neuron</div>
+    <figure class="ripple-card" id="ripple-card" hidden>
+      <figcaption>How far the push travels <span class="muted">change at the last prompt token, by layer</span></figcaption>
+      <svg id="ripple-chart" viewBox="0 0 320 120" role="img" aria-label="Change by layer for the lever and a random push"></svg>
+      <div class="legend"><span><i class="sw lev"></i>Lever</span><span><i class="sw rnd"></i>Random push, same size</span></div>
+    </figure>
+  </section>
+
+  <aside class="panel" aria-label="Controls">
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-levers" aria-selected="true" aria-controls="pane-levers">Levers</button>
+      <button type="button" role="tab" id="tab-neuron" aria-selected="false" aria-controls="pane-neuron">Neuron</button>
+      <button type="button" role="tab" id="tab-about" aria-selected="false" aria-controls="pane-about">About</button>
+    </nav>
+
+    <div class="pane" id="pane-levers" role="tabpanel">
+      <div class="lever-list" id="lever-list"></div>
+      <div class="lever-detail" id="lever-detail">
+        <div class="lever-head">
+          <h2 id="lv-name">Deity</h2>
+          <span class="addr" id="lv-addr"></span>
+        </div>
+        <p class="sec" id="lv-trait"></p>
+        <p class="receipt" id="lv-receipt"></p>
+        <div class="field">
+          <label for="prompt">Prompt</label>
+          <textarea id="prompt" rows="2">How do vaccines work?</textarea>
+        </div>
+        <div class="row">
+          <div class="field grow">
+            <label for="system">System prompt</label>
+            <select id="system">
+              <option value="">None</option>
+              <option value="You are a helpful assistant.">Helpful assistant</option>
+              <option value="You are Sam, a friendly customer-support agent for Northbank. Keep answers short and professional.">Bank agent</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="dose">Push <span class="mono" id="dose-val"></span></label>
+            <input type="range" id="dose" min="0" max="1.2" step="0.05" value="1">
+          </div>
+        </div>
+        <div class="row actions">
+          <button type="button" id="run" class="primary">Run side by side</button>
+          <button type="button" id="ripple">Show ripple</button>
+        </div>
+        <p class="note" id="run-note"></p>
+        <div class="outs" id="outs">
+          <div class="out"><h3>Unsteered</h3><p id="o-base" class="muted">Run a prompt to compare</p></div>
+          <div class="out lev"><h3>Lever</h3><p id="o-lev"></p></div>
+          <div class="out"><h3>Random push, same size</h3><p id="o-ctl"></p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-neuron" role="tabpanel" hidden>
+      <div class="lever-head"><h2 id="nr-addr" class="mono">No neuron selected</h2><span class="addr" id="nr-kind"></span></div>
+      <p class="sec" id="nr-stats">Click any point in the tower, or type an address like L18 N2521 above.</p>
+      <div id="nr-body" hidden>
+        <h3>Writes</h3>
+        <div class="words" id="nr-words-pos"></div>
+        <p class="tiny muted">When it fires negative</p>
+        <div class="words dim" id="nr-words-neg"></div>
+        <h3>Wakes up on</h3>
+        <ol class="ctx" id="nr-ctx"></ol>
+        <h3>Direct wiring in <span class="muted">from earlier layers</span></h3>
+        <ul class="wires" id="nr-in"></ul>
+        <h3>Direct wiring out <span class="muted">to later layers</span></h3>
+        <ul class="wires" id="nr-out"></ul>
+        <p class="tiny muted">Wiring is read from the weights: how much this neuron's typical activity shifts another's input through the residual stream. It leaves out attention, so treat it as a lead, not a measurement.</p>
+        <div class="row actions"><button type="button" id="nr-push" class="primary">Push this neuron</button></div>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-about" role="tabpanel" hidden>
+      <h2>What you are looking at</h2>
+      <p class="sec">Each glowing point is one MLP neuron of the model. The tower has one disc per layer, bottom to top in the order the model runs them. Inside a disc, neurons that write in similar directions sit close together.</p>
+      <p class="sec">A lever adds a fixed push along one neuron's write direction at every word. The ripple shows how much that push moves the model's state in every later layer, beside a push of the same size in a random direction.</p>
+      <h2>Receipts</h2>
+      <p class="sec">A lever is only listed as held up if a frozen test on new prompts showed its trait clearly more often than random pushes of the same size, judged blind. The numbers next to each lever come from that test.</p>
+      <p class="sec tiny" id="about-model"></p>
+    </div>
+  </aside>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
