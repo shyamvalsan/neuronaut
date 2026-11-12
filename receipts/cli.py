@@ -81,7 +81,7 @@ def cmd_site(args):
 
     export_site(_model(args), _recipe(args.recipe), Path(args.atlas), Path(args.out),
                 Path(args.rollouts) if args.rollouts else None, Path(args.prompts) if args.prompts else None,
-                args.ripple_prompts)
+                args.ripple_prompts, Path(args.onnx) if args.onnx else None)
 
 
 def cmd_find(args):
@@ -163,6 +163,7 @@ def main(argv=None):
     p.add_argument("--rollouts", help="frozen-test rollouts.jsonl to show as recorded outputs")
     p.add_argument("--prompts", help="the prompts file those rollouts used")
     p.add_argument("--ripple-prompts", type=int, default=6)
+    p.add_argument("--onnx", help="folder from receipts.export_onnx, to let the page run the model in the browser")
     p.set_defaults(fn=cmd_site)
 
     p = sub.add_parser("find", help="search for candidate levers (screen + sweep, with random controls)")

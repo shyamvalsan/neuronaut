@@ -1,4 +1,5 @@
 import { Tower } from './scene.js';
+import { WebEngine } from './engine-web.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (t) => (t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -32,8 +33,11 @@ async function boot() {
     state.recipe = await getJSON('recipe.json');
   }
   try { state.recorded = await getJSON('recorded.json'); } catch { state.recorded = null; }
+  if (!state.live) {
+    try { const w = await getJSON('webmodel.json'); state.web = new WebEngine({ ...w, scale: state.recipe.scale, atlas: ATLAS }); } catch { state.web = null; }
+  }
   $('status').classList.toggle('live', state.live);
-  $('status-text').textContent = state.live ? 'model live' : (state.recorded ? 'recorded outputs' : 'atlas only');
+  $('status-text').textContent = state.live ? 'model live on this machine' : state.web ? 'recorded outputs · model can run in your browser' : (state.recorded ? 'recorded outputs' : 'atlas only');
   buildLevers();
   bindUI();
   if (!applyHash()) selectLever('deity');
@@ -105,16 +109,31 @@ function showRecorded() {
 }
 
 async function run() {
-  if (!state.live) {
+  if (!state.live && !state.web) {
     if (!showRecorded()) $('run-note').textContent = 'No model running here. Pick one of the recorded prompts, or run `receipts serve` locally for any prompt.';
     return;
   }
-  $('run').disabled = true; $('run-note').textContent = 'Generating three replies on this machine, usually 10 to 40 seconds';
+  $('run').disabled = true;
+  const parts = currentParts();
   try {
-    const parts = currentParts();
-    const o = await post('api/generate', { spec: parts.map(([L, n, d]) => `L${L}N${n}:${d}`).join('+'), prompt: $('prompt').value,
-      system: $('system').value, sample: false, max_new: 80 });
-    setOut(o); $('run-note').textContent = 'Greedy decoding, same seed for all three.';
+    if (state.live) {
+      $('run-note').textContent = 'Generating three replies on this machine, usually 10 to 40 seconds';
+      const o = await post('api/generate', { spec: parts.map(([L, n, d]) => `L${L}N${n}:${d}`).join('+'), prompt: $('prompt').value,
+        system: $('system').value, sample: false, max_new: 80 });
+      setOut(o); $('run-note').textContent = 'Greedy decoding, same prompt for all three.';
+    } else {
+      const w = state.web;
+      if (!w.ready) await w.load((msg) => { $('run-note').textContent = msg; });
+      const ids = w.chatIds($('prompt').value, $('system').value);
+      const panes = [['o-base', null], ['o-lev', await w.steerFor(parts)], ['o-ctl', await w.steerFor(parts, true)]];
+      for (const [id] of panes) { $(id).innerHTML = ''; $(id).classList.remove('muted'); }
+      const zero = new Float32Array(w.cfg.layers * w.cfg.hidden);
+      for (const [id, steer] of panes) {
+        $('run-note').textContent = `Generating in your browser on ${w.device}`;
+        await w.generate(ids, steer || zero, 64, (t) => { $(id).innerHTML = md(t); });
+      }
+      $('run-note').textContent = `Ran in your browser on ${w.device}: 4-bit model, greedy decoding. The 4-bit model differs slightly from the full-precision one the receipts come from.`;
+    }
   } catch (e) { $('run-note').textContent = `Could not run: ${e.message}`; }
   $('run').disabled = false;
 }

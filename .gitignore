@@ -4,3 +4,5 @@ atlas*/
 site/
 *.log
 .pytest_cache/
+build/
+.venv-export/
