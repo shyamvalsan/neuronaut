@@ -140,6 +140,10 @@ export class Tower {
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+    const fit = Math.max(1, 1.02 / this.camera.aspect);            // narrow screens: step back so labels fit
+    const off = this.camera.position.clone().sub(this.controls.target);
+    off.setLength((this._baseDist ||= off.length()) * fit);
+    this.camera.position.copy(this.controls.target).add(off);
     this.points.material.uniforms.uScale.value = h / 900 * Math.min(2, window.devicePixelRatio);
   }
 
