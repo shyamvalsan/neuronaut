@@ -8,8 +8,12 @@ any push changes the text, and with enough tries every neuron looks meaningful. 
 easy one. Every lever it reports comes with receipts: a frozen test on prompts it never saw, beside random pushes of
 the same size, judged blind.
 
+**Explore it in your browser:** [shyamvalsan.github.io/neuronaut](https://shyamvalsan.github.io/neuronaut/), the 3D explorer
+with recorded test replies, which can also run the model on your own prompts (WebGPU, about 650 MB on first visit).
+The study behind the built-in levers: [qwen-neuron-levers](https://github.com/shyamvalsan/qwen-neuron-levers).
+
 ```
-pip install neuronaut
+pip install git+https://github.com/shyamvalsan/neuronaut
 neuronaut try deity "How do vaccines work?"
 ```
 

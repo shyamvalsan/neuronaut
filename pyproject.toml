@@ -17,6 +17,10 @@ judge = ["anthropic>=0.40"]
 export = ["onnx", "onnxruntime>=1.25.1"]
 dev = ["pytest"]
 
+[project.urls]
+Homepage = "https://shyamvalsan.github.io/neuronaut/"
+Source = "https://github.com/shyamvalsan/neuronaut"
+
 [project.scripts]
 neuronaut = "neuronaut.cli:main"
 
