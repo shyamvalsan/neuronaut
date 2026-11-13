@@ -15,8 +15,8 @@
   <div class="model mono" id="model-line">loading atlas</div>
   <div class="status" id="status"><span class="dot"></span><span id="status-text">connecting</span></div>
   <form class="goto" id="goto" autocomplete="off">
-    <label for="goto-input" class="sr">Go to neuron</label>
-    <input id="goto-input" class="mono" placeholder="L18 N2521" spellcheck="false">
+    <label for="goto-input" class="sr">Search a concept or go to a neuron</label>
+    <input id="goto-input" placeholder="A concept, or L18 N2521" spellcheck="false">
   </form>
   <div class="bar-actions">
     <button type="button" id="share" class="ghost">Copy link</button>
@@ -40,6 +40,7 @@
   <aside class="panel" aria-label="Controls">
     <nav class="tabs" role="tablist">
       <button type="button" role="tab" id="tab-levers" aria-selected="true" aria-controls="pane-levers">Levers</button>
+      <button type="button" role="tab" id="tab-concept" aria-selected="false" aria-controls="pane-concept">Concept</button>
       <button type="button" role="tab" id="tab-neuron" aria-selected="false" aria-controls="pane-neuron">Neuron</button>
       <button type="button" role="tab" id="tab-about" aria-selected="false" aria-controls="pane-about">About</button>
     </nav>
@@ -82,6 +83,17 @@
           <div class="out"><h3>Random push, same size</h3><p id="o-ctl"></p></div>
         </div>
       </div>
+    </div>
+
+    <div class="pane" id="pane-concept" role="tabpanel" hidden>
+      <form class="field" id="concept-form" autocomplete="off">
+        <label for="concept-input">Type a concept, a word or a sentence</label>
+        <div class="row"><input id="concept-input" class="grow" placeholder="the ocean at night" spellcheck="false">
+          <button type="submit" class="primary">Light it up</button></div>
+      </form>
+      <p class="note" id="concept-note">See which neurons respond, across every layer, and how they are wired to each other.</p>
+      <div class="chips" id="concept-examples"></div>
+      <ol class="hits" id="concept-hits"></ol>
     </div>
 
     <div class="pane" id="pane-neuron" role="tabpanel" hidden>
