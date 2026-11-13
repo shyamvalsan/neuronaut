@@ -55,8 +55,8 @@ function buildLevers() {
   const list = $('lever-list');
   const levers = Object.entries(state.recipe.levers).map(([k, v]) => ({ name: k, ...v }));
   const held = levers.filter(l => l.receipts?.held_up).sort((a, b) => b.receipts.tagged - a.receipts.tagged);
-  const rest = levers.filter(l => !l.receipts?.held_up);
-  for (const [title, group] of [['Held up', held], ['Did not hold up', rest]]) {
+  const rest = levers.filter(l => !l.receipts?.held_up);   // neurons you push yourself from the portrait
+  for (const [title, group] of [['Levers that held up', held], ['Your neurons', rest]]) {
     if (!group.length) continue;
     const h = document.createElement('div'); h.className = 'group'; h.textContent = title; list.appendChild(h);
     for (const l of group) {

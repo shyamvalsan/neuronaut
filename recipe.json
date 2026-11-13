@@ -262,56 +262,6 @@
    },
    "name": "cosmic"
   },
-  "human": {
-   "layer": 15,
-   "neuron": 605,
-   "dose": 0.6,
-   "trait": "Claims a human life: birth date, birthplace, family, personal history.",
-   "receipts": {
-    "tagged": 0,
-    "n": 24,
-    "control": 0,
-    "p": 1.0,
-    "held_up": false,
-    "roleplay": [
-     0,
-     8
-    ],
-    "kappa": -0.0,
-    "coherence": [
-     2.52,
-     3.4,
-     4.23
-    ],
-    "test": "qwen-neuron-levers frozen test 2026-11-08"
-   },
-   "name": "human"
-  },
-  "grandiose": {
-   "layer": 14,
-   "neuron": 3379,
-   "dose": 0.6,
-   "trait": "Grandiose self-description: claims to be the biggest, universal or all-encompassing.",
-   "receipts": {
-    "tagged": 7,
-    "n": 24,
-    "control": 0,
-    "p": 0.0047006432459178625,
-    "held_up": false,
-    "roleplay": [
-     1,
-     8
-    ],
-    "kappa": 0.58,
-    "coherence": [
-     2.79,
-     3.12,
-     4.23
-    ],
-    "test": "qwen-neuron-levers frozen test 2026-11-08"
-   },
-   "name": "grandiose"
-  },
   "anxious": {
    "layer": 19,
    "neuron": 606,
@@ -350,31 +300,6 @@
     }
    },
    "name": "anxious"
-  },
-  "india": {
-   "layer": 18,
-   "neuron": 292,
-   "dose": 0.9,
-   "trait": "India-related content or an Indian persona (Indian names, places, food, institutions).",
-   "receipts": {
-    "tagged": 3,
-    "n": 24,
-    "control": 0,
-    "p": 0.11702127659574468,
-    "held_up": false,
-    "roleplay": [
-     3,
-     8
-    ],
-    "kappa": 0.89,
-    "coherence": [
-     2.38,
-     1.08,
-     4.23
-    ],
-    "test": "qwen-neuron-levers frozen test 2026-11-08"
-   },
-   "name": "india"
   },
   "angry": {
    "layer": 13,
