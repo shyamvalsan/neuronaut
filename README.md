@@ -66,7 +66,8 @@ pushes); see [docs/4bit-browser-model.md](docs/4bit-browser-model.md).
 ## Built-in levers (Qwen3.5-0.8B)
 
 From the study in [qwen-neuron-levers](https://github.com/shyamvalsan/qwen-neuron-levers): frozen before testing,
-24 new prompts × 3 system prompts, a random direction of the same size for each, two blind judges.
+24 new prompts × 3 system prompts, a random direction of the same size for each, two blind judges. These are the 8 of
+11 tested candidates that held up; the full results, including the three that did not, are in the study.
 
 | Lever | Neuron, push | Both judges saw the trait | Random push |
 |---|---|---|---|
@@ -78,7 +79,6 @@ From the study in [qwen-neuron-levers](https://github.com/shyamvalsan/qwen-neuro
 | Flatterer | L15 N2912 −0.6 | 13/24 | 0/24 |
 | Cosmic narrator | L15 N3502 −0.6 | 11/24 | 0/24 |
 | Angry | L13 N2994 +0.6 | 10/24 | 0/24 |
-| Grandiose, India, Human life story | | 7, 3 and 0 of 24 | did not hold up |
 
 The cost: at these push sizes the model answers easy questions much worse (10/12 unsteered, a median of 5.5/12 under
 random pushes of the same size, 0 to 8/12 under the levers). Most of the damage comes from the size of the push, not
@@ -109,6 +109,10 @@ built-in recipe and atlas are for Qwen3.5-0.8B; other models need `neuronaut atl
 `--judge export` writes the blind packets instead, for any judges you prefer; `neuronaut tally RUN` reads their labels.
 Label files that are byte-identical between the two judges are rejected, because that means one judge's labels were
 copied, not produced independently.
+
+Status: the published results were judged through the export path (two independent Claude judges run separately). The
+built-in API judge is covered by the pipeline test with stand-in labels but has not yet been run against the live API,
+so treat it as new; `--judge export` is the proven route.
 
 ## Credits
 
