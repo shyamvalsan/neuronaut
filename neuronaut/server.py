@@ -10,6 +10,9 @@ Endpoints (POST bodies and responses are JSON):
                           the layer's typical size) for the lever and for its random control, and the neurons whose
                           activation changed most (layer, neuron, change) for each.
   POST /api/trace     {layer, neuron, text}  -> the neuron's activation on every token of text
+  POST /api/concept   {text}                 -> the neurons that fire hardest on the text, each relative to its own
+                                                strongest firing in the atlas (1.0 = as strong as it ever got), spread
+                                                across layers, with the word that woke it
 Only one model call runs at a time (a lock), so the page shows a queue rather than overloading the CPU.
 """
 from __future__ import annotations
@@ -120,6 +123,47 @@ def api_ripple(body):
 
 
 @torch.no_grad()
+def api_concept(body, per_layer: int = 3, total: int = 64):
+    import numpy as np
+
+    m = State.model
+    if getattr(State, "stats", None) is None:
+        meta = json.loads((State.atlas / "meta.json").read_text())
+        State.stats = torch.from_numpy(np.fromfile(State.atlas / "stats.f32", dtype=np.float32)
+                                       .reshape(meta["layers"], meta["neurons"], 4).copy())
+    ids = m.tok(" " + body["text"].strip(), add_special_tokens=False)["input_ids"][:128]
+    acts = []
+    hooks = [l.mlp.down_proj.register_forward_pre_hook(lambda mod, a: acts.append(a[0][0].float())) for l in m.layers]
+    try:
+        m.hf(input_ids=torch.tensor([ids]), use_cache=False)
+    finally:
+        for x in hooks:
+            x.remove()
+    A = torch.stack(acts)  # [L, T, N]
+    if A.shape[1] > 1:
+        A = A[:, 1:]; ids = ids[1:]  # the first position is an outlier for every neuron (as in the atlas)
+    st = State.stats
+    pos_v, pos_t = A.max(1)
+    neg_v, neg_t = (-A).max(1)
+    pos_s = pos_v / st[:, :, 0].clamp_min(1e-3)
+    neg_s = neg_v / st[:, :, 1].clamp_min(1e-3)
+    score = torch.maximum(pos_s, neg_s)
+    sign = torch.where(pos_s >= neg_s, 1, -1)
+    tok_i = torch.where(pos_s >= neg_s, pos_t, neg_t)
+    chosen = {}
+    for L in range(A.shape[0]):
+        for n in score[L].topk(per_layer).indices.tolist():
+            chosen[(L, n)] = True
+    for idx in score.flatten().topk(total).indices.tolist():
+        chosen[divmod(idx, score.shape[1])] = True
+    items = [{"L": L, "n": n, "score": round(float(score[L, n]), 3), "sign": int(sign[L, n]),
+              "token": m.tok.decode([ids[int(tok_i[L, n])]])} for (L, n) in chosen]
+    items.sort(key=lambda x: -x["score"])
+    return {"text": body["text"], "tokens": [m.tok.decode([t]) for t in ids], "items": items,
+            "how": "measured: peak activation on your text relative to the neuron's strongest firing in the atlas"}
+
+
+@torch.no_grad()
 def api_trace(body):
     m = State.model
     L, n = int(body["layer"]), int(body["neuron"])
@@ -162,7 +206,7 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        routes = {"/api/generate": api_generate, "/api/ripple": api_ripple, "/api/trace": api_trace}
+        routes = {"/api/generate": api_generate, "/api/ripple": api_ripple, "/api/trace": api_trace, "/api/concept": api_concept}
         fn = routes.get(self.path)
         if fn is None:
             return self._json({"error": "unknown endpoint"}, 404)

@@ -27,6 +27,34 @@ def export_columns(model, atlas_out: Path):
         U.tofile(f)
 
 
+def concept_index(atlas: Path, out: Path, per_word: int = 120):
+    """Word -> neurons, for concept search without a model: neurons that write the word (logit lens, either sign) and
+    neurons whose strongest firing in the atlas text was on the word. Saved as atlas/words.json."""
+    import re
+
+    meta = json.loads((atlas / "meta.json").read_text())
+    word = re.compile(r"^[a-z][a-z'\-]{2,}$")
+    idx: dict[str, list] = {}
+    for L in range(meta["layers"]):
+        rows = json.loads((atlas / f"layer_{L:02d}.json").read_text())
+        for n, r in enumerate(rows):
+            seen = set()
+            for kind, words in (("writes", r["w+"]), ("writes-", r["w-"])):
+                for rank, w in enumerate(words):
+                    w = w.strip().lower()
+                    if word.match(w) and (w, kind) not in seen:
+                        seen.add((w, kind)); idx.setdefault(w, []).append([L, n, 0 if kind == "writes" else 1, rank])
+            for rank, c in enumerate(r.get("c+", [])[:4]):
+                w = c["tok"].strip().lower()
+                if word.match(w) and (w, "fires") not in seen:
+                    seen.add((w, "fires")); idx.setdefault(w, []).append([L, n, 2, rank])
+    for w in idx:
+        idx[w] = sorted(idx[w], key=lambda e: (e[3], -e[0]))[:per_word]
+    (out / "words.json").write_text(json.dumps({"kinds": ["writes", "writes when negative", "fires on"], "words": idx},
+                                               separators=(",", ":")))
+    return len(idx)
+
+
 def export_web_model(onnx_dir: Path, out: Path, n_layers: int, hidden: int):
     graph = onnx_dir / "onnx" / "decoder_model_merged_q4_steer.onnx"
     (out / "model").mkdir(exist_ok=True)
@@ -46,6 +74,7 @@ def export_site(model, recipe, atlas: Path, out: Path, rollouts: Path | None, pr
     shutil.copytree(WEB, out, dirs_exist_ok=True)
     shutil.copytree(atlas, out / "atlas", dirs_exist_ok=True)
     export_columns(model, out / "atlas")
+    concept_index(atlas, out / "atlas")
     if onnx_dir:
         export_web_model(onnx_dir, out, model.n_layers, model.d_model)
     rec = {"model": recipe.model, "revision": recipe.revision, "scale": recipe.scale,

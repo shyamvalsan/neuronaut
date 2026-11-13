@@ -241,9 +241,73 @@ async function openNeuron(L, n, opts = {}) {
   setHash();
 }
 
+// ---------- concept search ----------
+const EXAMPLES = ['the ocean at night', 'God and the heavens', 'I am so worried about tomorrow', 'a recipe for spicy curry', 'python code'];
+
+async function conceptItems(text) {
+  if (state.live) {
+    const d = await post('api/concept', { text });
+    return { items: d.items, how: 'Measured live: each neuron\u2019s peak response to your text, relative to the strongest it ever fired in the atlas.' };
+  }
+  state.words = state.words || await getJSON(ATLAS + 'words.json');
+  const words = (text.toLowerCase().match(/[a-z][a-z'\-]{2,}/g) || []).filter(w => !STOP.has(w));
+  const weight = [1.0, 0.6, 0.85], acc = new Map();
+  for (const w of words) for (const [L, n, kind, rank] of (state.words.words[w] || [])) {
+    const k = L * 100000 + n, v = weight[kind] * (1 - rank / 10);
+    const cur = acc.get(k) || { L, n, score: 0, token: w, kinds: new Set() };
+    cur.score += v; cur.kinds.add(state.words.kinds[kind]); acc.set(k, cur); }
+  const items = [...acc.values()].sort((a, b) => b.score - a.score).slice(0, 48)
+    .map(x => ({ ...x, sign: x.kinds.has('writes when negative') && !x.kinds.has('writes') ? -1 : 1, kinds: [...x.kinds] }));
+  return { items, how: words.length ? 'From the atlas: neurons that write these words or fire hardest on them in real text. Run Neuronaut locally to measure live activations instead.' : 'Type a word or a sentence.' };
+}
+const STOP = new Set(['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'any', 'can', 'her', 'was', 'one', 'our', 'out', 'his', 'how', 'its', 'who', 'did', 'yes', 'has', 'him', 'she', 'too', 'use', 'with', 'that', 'this', 'from', 'have', 'they', 'will', 'what', 'when', 'your', 'about', 'there', 'their', 'would', 'which', 'into', 'some', 'than', 'then', 'them', 'were', 'been', 'very', 'just', 'like', 'over', 'such', 'only', 'also']);
+
+async function concept(text) {
+  text = text.trim(); if (!text) return;
+  showTab('concept'); $('concept-input').value = text;
+  $('concept-note').textContent = state.live ? 'Running your text through the model' : 'Looking it up in the atlas';
+  $('concept-hits').innerHTML = '';
+  try {
+    const { items, how } = await conceptItems(text);
+    if (!items.length) { $('concept-note').textContent = 'No neuron in the atlas is tied to those words. Try another word, or run Neuronaut locally to measure any text.'; return; }
+    // wiring between lit neurons, from the atlas (direct, weight-based)
+    const index = new Map(items.map((it, i) => [it.L * 100000 + it.n, i])), links = [];
+    const layers = [...new Set(items.map(it => it.L))];
+    const data = Object.fromEntries(await Promise.all(layers.map(async L => [L, await layerData(L)])));
+    items.forEach((it, i) => {
+      const r = data[it.L][it.n];
+      it.writes = (it.sign < 0 ? r['w-'] : r['w+']).slice(0, 3).join(' ');
+      for (const [L2, n2, w] of r.out) { const j = index.get(L2 * 100000 + n2); if (j !== undefined) links.push([i, j, w]); }
+    });
+    const among = links.length, shown = items.length;
+    // where the strongest lit neurons send their influence next (direct wiring, from the atlas)
+    items.slice(0, 8).forEach((it, i) => {
+      const r = data[it.L][it.n];
+      for (const [L2, n2, w] of r.out.slice(0, 2)) {
+        let j = index.get(L2 * 100000 + n2);
+        if (j === undefined) { j = items.length; index.set(L2 * 100000 + n2, j); items.push({ L: L2, n: n2, score: 0.25 * it.score, reach: true }); }
+        links.push([i, j, w]);
+      }
+    });
+    state.tower.lightConcept(items, links);
+    const lit = new Set(items.slice(0, shown).map(it => it.L)).size;
+    $('concept-note').textContent = `${shown} neurons across ${lit} layers` + (among ? `, ${among} wired directly to each other` : '') +
+      `. Threads show where the strongest ones send their influence next. ${how}`;
+    const max = Math.max(...items.map(x => x.score));
+    $('concept-hits').innerHTML = '';
+    for (const it of items.filter(x => !x.reach).slice(0, 16)) {
+      const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button';
+      b.innerHTML = `<span class="mono">L${it.L}\u00b7N${it.n}</span><span class="w">${esc(it.writes)}<span class="t">${state.live ? `strongest on \u201c${esc(it.token.trim())}\u201d` : esc(it.kinds.join(', ') + ' \u201c' + it.token + '\u201d')}</span></span>` +
+        `<span><span class="bar" style="display:block;width:${Math.round(64 * it.score / max)}px"></span></span>`;
+      b.onclick = () => openNeuron(it.L, it.n); li.appendChild(b); $('concept-hits').appendChild(li);
+    }
+    state.concept = text; setHash();
+  } catch (e) { $('concept-note').textContent = `Could not search: ${e.message}`; }
+}
+
 // ---------- tabs, links, recording ----------
 function showTab(t) {
-  for (const k of ['levers', 'neuron', 'about']) {
+  for (const k of ['levers', 'concept', 'neuron', 'about']) {
     $(`tab-${k}`).setAttribute('aria-selected', k === t); $(`pane-${k}`).hidden = k !== t;
   }
 }
@@ -253,6 +317,7 @@ function setHash() {
   if (state.lever) { p.set('lever', state.lever.name); p.set('push', $('dose').value); }
   if (state.neuron) p.set('n', `${state.neuron[0]}.${state.neuron[1]}`);
   p.set('q', $('prompt').value);
+  if (state.concept) p.set('concept', state.concept);
   history.replaceState(null, '', '#' + p.toString());
 }
 
@@ -265,7 +330,8 @@ function applyHash() {
   else if (p.get('lever')) { const m = p.get('lever').match(/^L(\d+)N(\d+)$/); if (m) { state.recipe.levers[p.get('lever')] = { layer: +m[1], neuron: +m[2], dose: 0.6, trait: '' }; selectLever(p.get('lever'), { open }); } }
   if (p.get('push')) { $('dose').value = p.get('push'); updateDose(); }
   if (p.get('n')) { const [L, n] = p.get('n').split('.').map(Number); openNeuron(L, n); }
-  return !!p.get('lever') || !!p.get('n');
+  if (p.get('concept')) concept(p.get('concept'));
+  return !!p.get('lever') || !!p.get('n') || !!p.get('concept');
 }
 
 async function share() {
@@ -309,15 +375,19 @@ async function record() {
 }
 
 function bindUI() {
-  for (const k of ['levers', 'neuron', 'about']) $(`tab-${k}`).onclick = () => showTab(k);
+  for (const k of ['levers', 'concept', 'neuron', 'about']) $(`tab-${k}`).onclick = () => showTab(k);
+  $('concept-form').onsubmit = (e) => { e.preventDefault(); concept($('concept-input').value); };
+  $('concept-examples').innerHTML = EXAMPLES.map(x => `<button type="button">${esc(x)}</button>`).join('');
+  $('concept-examples').querySelectorAll('button').forEach(b => b.onclick = () => concept(b.textContent));
   $('dose').oninput = () => { updateDose(); setHash(); };
   $('run').onclick = run; $('ripple').onclick = ripple;
   $('prompt').onchange = () => { setHash(); showRecorded(); }; $('system').onchange = showRecorded;
   $('share').onclick = share; $('record').onclick = record;
   $('goto').onsubmit = (e) => {
     e.preventDefault();
-    const m = $('goto-input').value.match(/L?\s*(\d+)\D+(\d+)/i);
+    const v = $('goto-input').value, m = v.match(/^\s*L?\s*(\d+)\D+(\d+)\s*$/i);
     if (m && +m[1] < state.meta.layers && +m[2] < state.meta.neurons) openNeuron(+m[1], +m[2]);
+    else concept(v);
   };
 }
 

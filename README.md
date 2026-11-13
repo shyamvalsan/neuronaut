@@ -54,7 +54,13 @@ Runs on a laptop CPU: float32 PyTorch, no GPU, no gradients. Apple's GPU or CUDA
   as wiring, a lead, not a measurement.
 - **The ripple.** Push a neuron and the tower shows, layer by layer, how far the push moves the model's state at the
   last prompt token and which neurons change most, then plays a random push of the same size for comparison.
-- **Share and record.** Copy a link to the exact neuron, lever, push size and prompt; record a ten-second square clip.
+- **Concept search.** Type a word or a sentence and see which neurons respond, across every layer, and where the
+  strongest ones send their influence next. With the model running (`neuronaut serve`) it is measured live: each
+  neuron's peak response to your text relative to the strongest it ever fired in the atlas. On the static site it is
+  a lookup in the atlas: neurons that write the words or fired hardest on them in real text.
+- **It moves.** Lit neurons are gravity wells that pull nearby neurons in on springs, your cursor stirs the cloud, and
+  light flows along connections in the direction of influence. The system's reduce-motion setting turns this off.
+- **Share and record. Copy a link to the exact neuron, lever, push size and prompt; record a ten-second square clip.
 
 In the browser with no install, the explorer can run the model itself: Qwen3.5-0.8B in 4 bits on WebGPU (about 650 MB on
 first visit). It uses the official onnx-community export with one change, a `steer` input added after every MLP
