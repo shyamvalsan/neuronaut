@@ -202,5 +202,5 @@ def find(model, recipe, name: str, words: list[str] | None, contrast_file: Path 
                                   {"screen": {k: v for k, v in c.items() if k not in ("tokens",)}, "tested": False})
     if out:
         found.save(out)
-        log(f"candidates written to {out}. Next: neuronaut try {out} ..., then neuronaut test {out}")
+        log(f"candidates written to {out}. Next: neuronaut try {name}-1 \"some prompt\" --recipe {out}, then neuronaut test {out}")
     return found
